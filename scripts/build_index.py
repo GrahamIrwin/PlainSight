@@ -30,7 +30,7 @@ BULK_FILE = "oracle_cards.jsonl.gz"
 TAGS_FILE = "oracle_tags.jsonl.gz"
 PRINTINGS_FILE = "default_cards.jsonl.gz"  # every printing, for the cheapest price
 # Scryfall requires a User-Agent and Accept header on API requests
-HEADERS = {"User-Agent": "MTG_Vec2Search/1.0", "Accept": "application/json;q=0.9,*/*;q=0.8"}
+HEADERS = {"User-Agent": "PlainSight/1.0", "Accept": "application/json;q=0.9,*/*;q=0.8"}
 SKIP_LAYOUTS = {"token", "double_faced_token", "emblem", "art_series", "augment", "host",
                 "planar", "scheme", "vanguard"}
 FORMATS = ["standard", "pioneer", "modern", "legacy", "vintage", "commander", "pauper"]

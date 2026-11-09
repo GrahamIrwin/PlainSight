@@ -258,7 +258,7 @@ def style(t):
         "figure.facecolor": t["bg"], "axes.facecolor": t["bg"], "savefig.facecolor": t["bg"],
         "axes.edgecolor": t["rule"], "axes.labelcolor": t["soft"], "text.color": t["ink"],
         "xtick.color": t["soft"], "ytick.color": t["soft"], "grid.color": t["rule"], "grid.linewidth": 0.6,
-        "axes.spines.top": False, "axes.spines.right": False, "svg.hashsalt": "mtg-vec2search",
+        "axes.spines.top": False, "axes.spines.right": False, "svg.hashsalt": "plainsight",
     })
 
 

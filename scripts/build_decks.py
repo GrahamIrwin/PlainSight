@@ -35,7 +35,7 @@ from build_index import ROOT, by_popularity, in_data, load_cards, load_oracle_ta
 
 ARCHIDEKT = "https://archidekt.com/api"
 MOXFIELD = "https://api2.moxfield.com"
-HEADERS = {"User-Agent": "MTG_Vec2Search/1.0 (+https://github.com/grahamirwin/MTG_Vec2Search)",
+HEADERS = {"User-Agent": "PlainSight/1.0 (+https://github.com/GrahamIrwin/PlainSight)",
            "Accept": "application/json", "Accept-Encoding": "gzip"}
 COMMANDER_FORMAT = 3  # Archidekt's deckFormat id for Commander / EDH
 DELAY = 1.0  # seconds between requests; Archidekt is a small team, so crawl politely

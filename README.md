@@ -16,8 +16,7 @@ or pick the rail anywhere, to scroll. The die doesn't tumble for anyone who'd ra
 search only downloads the small pieces of the index it needs (~200 KB the first
 time, a few KB after that).
 
-**Live site:** https://grahamirwin.github.io/MTG_Vec2Search/ (the repo keeps its first name, MTG Vec2Search,
-after the vector space search behind the card search)
+**Live site:** https://grahamirwin.github.io/PlainSight/
 
 The site's own address is a landing page of its own (no header or search): the name, a line on what
 the site is, and a tile for each part (Find cards at `?search`, Deck recommendations, Commanders, Trends, Prices and Tournaments),

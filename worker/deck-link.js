@@ -3,7 +3,7 @@
 //   GET /?url=https://moxfield.com/decks/abc123  ->  { name, site, list: "1 Atraxa, Praetors' Voice (2X2) 190 *CMDR*\n1 Sol Ring (CMM) 410 *F*\n..." }
 // Each line names its printing (set, collector number, *F* foil, *E* etched), as the sites' own exports do
 // It fetches only the one deck it's asked for, as itself (no crawling, no pretending to be a browser).
-const UA = "MTG_Vec2Search/1.0 (+https://github.com/grahamirwin/MTG_Vec2Search)";
+const UA = "PlainSight/1.0 (+https://github.com/GrahamIrwin/PlainSight)";
 const SITE = "https://grahamirwin.github.io";
 const allowed = origin => origin === SITE || /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin ?? ""); // + local testing
 
