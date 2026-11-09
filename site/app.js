@@ -35,8 +35,10 @@ const commandersMode = params.has("commanders") || commanderKey !== null || card
 const trendsMode = params.has("trends");
 const tournamentsMode = params.has("tournaments");
 const pricesMode = params.has("prices");
-const searching = !deckMode && !commandersMode && !trendsMode && !tournamentsMode && !pricesMode
-  && [...params.keys()].some(k => k !== "sort");
+const otherMode = deckMode || commandersMode || trendsMode || tournamentsMode || pricesMode;
+const searching = !otherMode && [...params.keys()].some(k => k !== "sort" && k !== "search");
+// The landing page: the site's own address, nothing after it (the search's empty page is ?search)
+const landing = !otherMode && !searching && !params.has("search");
 
 function el(tag, props = {}, ...children) {
   const node = Object.assign(document.createElement(tag), props);
@@ -96,6 +98,7 @@ form.addEventListener("submit", e => {
   if (metaSets) $("set-code").value = setCode($("set").value);
   const next = new URLSearchParams([...new FormData(form)].filter(([, v]) => v));
   if (params.get("sort")) next.set("sort", params.get("sort"));
+  if (![...next.keys()].length) next.set("search", ""); // nothing to search for: the search's page, not the landing page
   location.search = next;
 });
 
@@ -121,7 +124,7 @@ if (activeFilters) {
   $("filter-count").hidden = false;
   $("filters").open = true;
 }
-$("clear-filters").href = "?" + new URLSearchParams(params.get("q") ? { q: params.get("q") } : {});
+$("clear-filters").href = "?" + new URLSearchParams(params.get("q") ? { q: params.get("q") } : { search: "" });
 
 const themeToggle = $("theme-toggle");
 const showThemeLabel = () =>
@@ -180,7 +183,9 @@ const message = text => {
   $("message").textContent = text;
   $("message").hidden = !text;
 };
-$("intro").hidden = searching || deckMode || commandersMode || trendsMode || tournamentsMode || pricesMode;
+$("intro").hidden = searching || landing || otherMode;
+$("landing").hidden = !landing;
+document.body.classList.toggle("landing-page", landing);
 $("results").hidden = !searching;
 form.hidden = deckMode || commandersMode || trendsMode || tournamentsMode || pricesMode;
 $("deck-view").hidden = !deckMode;
@@ -188,7 +193,7 @@ $("commander-view").hidden = !commandersMode;
 $("trends-view").hidden = !trendsMode;
 $("tournaments-view").hidden = !tournamentsMode;
 $("prices-view").hidden = !pricesMode;
-$(deckMode ? "mode-deck" : commandersMode ? "mode-commanders" : trendsMode ? "mode-trends"
+if (!landing) $(deckMode ? "mode-deck" : commandersMode ? "mode-commanders" : trendsMode ? "mode-trends"
   : tournamentsMode ? "mode-tournaments" : pricesMode ? "mode-prices" : "mode-cards")
   .setAttribute("aria-current", "page");
 

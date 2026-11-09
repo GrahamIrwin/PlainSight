@@ -230,6 +230,35 @@
       background-position: right 16px center, right 11px center; background-size: 5px 5px; background-repeat: no-repeat; }
     .filter-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; }
 
+    /* ---------- Landing page: a tile into each part, its art over its name ---------- */
+    .landing { max-width: 1040px; margin: 0 auto; }
+    .land-lede { max-width: 640px; margin: 26px auto 0; text-align: center; font-size: 18px; line-height: 1.55; color: var(--ink-soft); }
+    .land-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 40px; }
+    .land-tile {
+      display: flex; flex-direction: column; overflow: hidden; color: inherit; text-decoration: none;
+      background: var(--paper-2); border: 1px solid var(--rule); border-radius: 14px;
+      transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+      animation: rise .4s ease both; animation-delay: calc(var(--i, 0) * 50ms);
+    }
+    .land-tile:nth-child(2) { --i: 1; } .land-tile:nth-child(3) { --i: 2; } .land-tile:nth-child(4) { --i: 3; }
+    .land-tile:nth-child(5) { --i: 4; } .land-tile:nth-child(6) { --i: 5; }
+    .land-tile img { display: block; width: 100%; aspect-ratio: 626 / 380; object-fit: cover; background: var(--paper); border-bottom: 1px solid var(--rule); }
+    .land-tile h2 { font-size: 21px; margin: 14px 18px 4px; }
+    .land-tile .numeral { font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-weight: normal; color: var(--brass); margin-right: 10px; letter-spacing: .04em; }
+    .land-tile p { margin: 0 18px 18px; color: var(--ink-soft); font-size: 15.5px; line-height: 1.5; }
+    .land-tile:hover, .land-tile:focus-visible { transform: translateY(-4px); border-color: var(--brass); box-shadow: 0 18px 28px -14px rgb(0 0 0 / .55); outline: none; }
+    .landing-page #filters { display: none; } /* the search on the landing page: just its bar */
+    @media (max-width: 900px) { .land-tiles { grid-template-columns: repeat(2, 1fr); } }
+    /* A phone: each tile a row, its art beside its name */
+    @media (max-width: 560px) {
+      .land-tiles { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
+      .land-lede { font-size: 16.5px; }
+      .land-tile { display: grid; grid-template-columns: 108px 1fr; }
+      .land-tile img { grid-row: span 2; height: 100%; aspect-ratio: auto; border-bottom: 0; border-right: 1px solid var(--rule); }
+      .land-tile h2 { font-size: 18px; margin: 12px 14px 2px; }
+      .land-tile p { margin: 0 14px 12px; font-size: 14.5px; }
+    }
+
     /* ---------- Intro (before the first search) ---------- */
     .intro { max-width: 980px; margin: 48px auto 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; }
     .intro section { padding-top: 14px; border-top: 1px solid var(--rule); }
@@ -830,7 +859,7 @@
       <h1><a href="./">PlainSight</a></h1>
       <p class="tagline">A plain-English card catalogue</p>
       <nav class="modes" aria-label="What to search">
-        <a href="./" id="mode-cards">Find cards</a>
+        <a href="?search" id="mode-cards">Find cards</a>
         <a href="?deck" id="mode-deck">Deck recommendations</a>
         <a href="?commanders" id="mode-commanders">Commanders</a>
         <a href="?trends" id="mode-trends">Trends</a>
@@ -915,6 +944,44 @@
           </div>
         </details>
       </form>
+
+      <!-- The landing page (no address but the site's): a line on what it is, and a way into each part -->
+      <div class="landing" id="landing" hidden>
+        <p class="land-lede">Search every Magic card in plain English, and see what Commander decks really
+          play, from public decklists and cEDH tournament results.</p>
+        <nav class="land-tiles" aria-label="Parts of the site">
+        <a class="land-tile" href="?search">
+          <img src="https://cards.scryfall.io/art_crop/front/a/2/a24b4cb6-cebb-428b-8654-74347a6a8d63.jpg" alt="" loading="lazy" decoding="async" title="Demonic Tutor">
+          <h2><span class="numeral">I.</span>Find cards</h2>
+          <p>Describe a card the way you would at the table, then narrow it by color, type, format and price.</p>
+        </a>
+        <a class="land-tile" href="?deck">
+          <img src="https://cards.scryfall.io/art_crop/front/1/a/1ac6cb62-45da-4e9a-84c6-09e6eacf0664.jpg" alt="" loading="lazy" decoding="async" title="Command Tower">
+          <h2><span class="numeral">II.</span>Deck recommendations</h2>
+          <p>Paste a Moxfield or Archidekt link or a decklist: the cards decks like yours play, what to cut, and what it’s worth.</p>
+        </a>
+        <a class="land-tile" href="?commanders">
+          <img src="https://cards.scryfall.io/art_crop/front/d/0/d0d33d52-3d28-4635-b985-51e126289259.jpg" alt="" loading="lazy" decoding="async" title="Atraxa, Praetors&#39; Voice">
+          <h2><span class="numeral">III.</span>Commanders</h2>
+          <p>Every commander’s decks: signature cards, an average deck, packages and combos, and how its cards do in tournaments.</p>
+        </a>
+        <a class="land-tile" href="?trends">
+          <img src="https://cards.scryfall.io/art_crop/front/e/5/e5142b7a-e580-4737-a4aa-2590f6610ceb.jpg" alt="" loading="lazy" decoding="async" title="Sensei&#39;s Divining Top">
+          <h2><span class="numeral">IV.</span>Trends</h2>
+          <p>What decks have started playing lately: rising cards, commanders and combos.</p>
+        </a>
+        <a class="land-tile" href="?prices">
+          <img src="https://cards.scryfall.io/art_crop/front/8/6/861b5889-0183-4bee-afeb-a4b2aa700a8e.jpg" alt="" loading="lazy" decoding="async" title="Smothering Tithe">
+          <h2><span class="numeral">V.</span>Prices</h2>
+          <p>Every printing’s price since 2020, what’s rising and falling, spec buys, reprints and a watchlist.</p>
+        </a>
+        <a class="land-tile" href="?tournaments">
+          <img src="https://cards.scryfall.io/art_crop/front/7/2/726e8b29-13e9-4138-b6a9-d2a0d8188d1c.jpg" alt="" loading="lazy" decoding="async" title="Thassa&#39;s Oracle">
+          <h2><span class="numeral">VI.</span>Tournaments</h2>
+          <p>cEDH results: the commanders that win, the cards in their decks, top finishes and the pilots behind them.</p>
+        </a>
+        </nav>
+      </div>
 
       <div class="intro" id="intro" hidden>
         <section>
