@@ -1,0 +1,16 @@
+name: Changelog
+
+# Posts each push's code changes to the PlainSight Discord channel (.github/changelog.py).
+on:
+  push:
+    branches: [main]
+    paths: ["site/**", "scripts/**", "worker/**"]
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 .github/changelog.py
+        env:
+          DISCORD_CHANGELOG: ${{ secrets.DISCORD_CHANGELOG }}

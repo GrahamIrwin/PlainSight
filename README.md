@@ -699,6 +699,9 @@ and `node --test` (Node 24).
 - `site/currency.js`: currency detection, exchange rate and price formatting
 - `.github/workflows/deploy.yml`: weekly rebuild and GitHub Pages deploy
 - `.github/workflows/crawl.yml`: daily price snapshot, deck crawl and tournament results, then a deploy
+- `.github/workflows/changelog.yml` and `.github/changelog.py`: post each push's code changes (to `site/`,
+  `scripts/` or `worker/`, by commit title) to the PlainSight Discord channel, through the webhook in the
+  `DISCORD_CHANGELOG` secret
 
 Card data and images come from [Scryfall](https://scryfall.com), decklists from
 [Archidekt](https://archidekt.com) and [Moxfield](https://moxfield.com), tournament data provided by
