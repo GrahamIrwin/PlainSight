@@ -1255,28 +1255,29 @@ function everyMonth(rows, blank) {
 }
 const rowOf = (rows, month, blank) => rows.get(month) ?? rows.set(month, blank()).get(month);
 
-// A card's play rate by month among a commander's decks, by the month each was made (undated decks
-// left out): [{month, decks (made that month), playing (of them, play the card)}]
+// A card's (or a package's: an array, all of its cards) play rate by month among a commander's decks, by
+// the month each was made (undated decks left out): [{month, decks (made that month), playing (of them,
+// play it)}]
 export function playRateByMonth(shard, card) {
   shard = decoded(shard);
-  const p = shard.position.get(card);
+  const ps = [card].flat().map(c => shard.position.get(c));
   const blank = () => ({ decks: 0, playing: 0 });
   const rows = new Map();
   for (const d of shard.decks) {
     if (!d.made) continue;
     const row = rowOf(rows, d.made.slice(0, 7), blank);
     row.decks++;
-    row.playing += p !== undefined && d.cards.includes(p);
+    row.playing += ps.every(p => p !== undefined && d.cards.includes(p));
   }
   return everyMonth(rows, blank);
 }
 
-// A card's tournament results by month (lists.months: the month each of lists.decks was played in;
-// [] for older files without it): [{month, decks, games, wins (the decks playing it), allDecks,
-// allGames, allWins (every deck)}]
+// A card's (or a package's: an array, all of its cards) tournament results by month (lists.months: the
+// month each of lists.decks was played in; [] for older files without it): [{month, decks, games, wins
+// (the decks playing it), allDecks, allGames, allWins (every deck)}]
 export function resultsByMonth(lists, card) {
   if (!lists.months) return [];
-  const p = lists.cards.indexOf(card);
+  const ps = [card].flat().map(c => lists.cards.indexOf(c));
   const blank = () => ({ decks: 0, games: 0, wins: 0, allDecks: 0, allGames: 0, allWins: 0 });
   const rows = new Map();
   lists.decks.forEach(([, games, wins, , ...gaps], i) => {
@@ -1286,7 +1287,8 @@ export function resultsByMonth(lists, card) {
     row.allGames += games;
     row.allWins += wins;
     let q = 0;
-    if (p >= 0 && gaps.some(g => (q += g) === p)) {
+    const plays = new Set(gaps.map(g => (q += g)));
+    if (ps.every(p => plays.has(p))) {
       row.decks++;
       row.games += games;
       row.wins += wins;

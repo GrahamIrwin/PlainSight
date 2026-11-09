@@ -442,6 +442,12 @@
     .combo-list > li { background: var(--paper); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; min-width: 0; }
     .combo-cards { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
     .combo-cards .card.mini { width: min(112px, 24vw); animation: none; }
+    /* A package's details: its cards, what they cost, how it does */
+    .package-cards { display: flex; flex-wrap: wrap; gap: 14px; margin: 14px 0 6px; }
+    .package-cards .card.mini { width: min(132px, 28vw); animation: none; }
+    .package-cards .card.mini .card-meta { justify-content: center; font-size: 14px; }
+    .package-price { font-size: 18px; margin: 8px 0 18px; }
+    .package-part { margin: 0 0 22px; }
     .combo-cards .card.mini .card-meta { justify-content: center; font-size: 13px; }
     .combo-list .plus { color: var(--ink-faint); font-size: 15px; }
     .combo-list .need { font-style: italic; }
@@ -1759,6 +1765,30 @@
         <div class="price-chart" id="with-chart"></div>
         <p class="with-note" id="with-chart-note"></p>
       </div>
+    </div>
+  </dialog>
+
+  <dialog id="package-modal" aria-labelledby="package-name">
+    <form method="dialog"><button class="close" aria-label="Close">×</button></form>
+    <h2 id="package-name"></h2>
+    <p class="muted" id="package-what"></p>
+    <div class="package-cards" id="package-tiles"></div>
+    <p class="package-price" id="package-price"></p>
+    <div class="card-alts" id="package-alts" hidden>
+      <span class="label">Cheaper cards that do the same thing</span>
+      <ul class="found-list" id="package-alts-list"></ul>
+    </div>
+    <div class="package-part" id="package-tournaments" hidden>
+      <span class="label">In cEDH tournaments</span>
+      <div class="result-stats" id="package-stats"></div>
+      <p class="muted with-note" id="package-stats-note"></p>
+    </div>
+    <div class="package-part" id="package-time" hidden>
+      <span class="label">Over time</span>
+      <div class="chips type-filter" id="package-kinds" role="group" aria-label="Over time"></div>
+      <p class="chart-legend" id="package-legend" hidden></p>
+      <div class="price-chart" id="package-chart"></div>
+      <p class="with-note" id="package-chart-note"></p>
     </div>
   </dialog>
 

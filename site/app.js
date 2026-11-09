@@ -473,6 +473,40 @@ function withRows(list, more, rows) {
   more.onclick();
 }
 let withTab = "details"; // the tab last picked, kept from card to card
+// A chart over time (a card's, or a package's: name, "all of A + B"), in the boxes named <prefix>-kinds,
+// -legend, -chart and -chart-note: the play rate by month (byMonth, playRateByMonth's) or, with tournament
+// results (months, resultsByMonth's), its decks' win rate; kind, the one shown ("play" or "wins"), and
+// pick(kind) to show another
+function overTime(prefix, { name, lead, shard, byMonth, months }, kind, pick) {
+  const box = part => $(`${prefix}-${part}`);
+  const kinds = [["play", "Play rate"], ...(months.some(r => r.decks) ? [["wins", "Tournament win rate"]] : [])];
+  if (!kinds.some(([k]) => k === kind)) kind = "play";
+  chipRow(box("kinds"), kinds, kind, pick);
+  box("kinds").hidden = kinds.length < 2;
+  box("legend").hidden = kind !== "wins";
+  if (kind === "play") {
+    const every = (shard.months?.[1] ?? []).reduce((k, c) => k + c, 0) > shard.decks.length;
+    box("chart-note").textContent = `The share of ${lead} decks made each month that play ${name}, from ${every ? "the newest" : "all"} `
+      + `${shard.decks.length.toLocaleString()} decks. Faded: under ${FEW_MONTH_DECKS} decks that month.`;
+    monthChart(box("chart"), byMonth, {
+      label: `${name} play rate by month`, percent: true,
+      value: r => (r.decks ? r.playing / r.decks : null), few: r => r.decks < FEW_MONTH_DECKS,
+      tip: r => `${monthName(r.month)}: ${r.decks ? `${percent(r.playing / r.decks)} of ${decksText(r.decks)}` : "no decks"}`,
+    });
+  } else {
+    box("legend").replaceChildren(el("span", { textContent: `Decks with ${name}` }),
+      el("span", { className: "other", textContent: `All ${lead} decks` }));
+    box("chart-note").textContent = `Share of games won by ${lead} tournament decks each month. Faded: under `
+      + `${MIN_RESULT_DECKS} decks with ${name} that month.`;
+    monthChart(box("chart"), months, {
+      label: `${name} tournament win rate by month`, percent: true,
+      value: r => (r.games ? r.wins / r.games : null), other: r => (r.allGames ? r.allWins / r.allGames : null),
+      few: r => r.decks < MIN_RESULT_DECKS,
+      tip: r => `${monthName(r.month)}: ${r.games ? `${percent(r.wins / r.games)} of ${r.games.toLocaleString()} games (${decksText(r.decks)})` : "no decks"}`
+        + (r.allGames ? ` · all decks ${percent(r.allWins / r.allGames)}` : ""),
+    });
+  }
+}
 // Just the card's details, no tabs (opened anywhere but a commander page, or nothing more to show)
 function plainCard() {
   modal.classList.remove("wide");
@@ -500,35 +534,7 @@ async function showCardWith(card) {
 
   // Over time: its play rate, and with tournament results, its decks' win rate
   let lists = null, months = [], wins = [], kind = "play";
-  const drawTime = () => {
-    const kinds = [["play", "Play rate"], ...(months.some(r => r.decks) ? [["wins", "Tournament win rate"]] : [])];
-    if (!kinds.some(([k]) => k === kind)) kind = "play";
-    chipRow($("with-kinds"), kinds, kind, k => { kind = k; drawTime(); });
-    $("with-kinds").hidden = kinds.length < 2;
-    $("with-legend").hidden = kind !== "wins";
-    if (kind === "play") {
-      const every = (shard.months?.[1] ?? []).reduce((k, c) => k + c, 0) > shard.decks.length;
-      $("with-chart-note").textContent = `The share of ${lead} decks made each month that play ${name}, from ${every ? "the newest" : "all"} `
-        + `${shard.decks.length.toLocaleString()} decks. Faded: under ${FEW_MONTH_DECKS} decks that month.`;
-      monthChart($("with-chart"), byMonth, {
-        label: `${name} play rate by month`, percent: true,
-        value: r => (r.decks ? r.playing / r.decks : null), few: r => r.decks < FEW_MONTH_DECKS,
-        tip: r => `${monthName(r.month)}: ${r.decks ? `${percent(r.playing / r.decks)} of ${decksText(r.decks)}` : "no decks"}`,
-      });
-    } else {
-      $("with-legend").replaceChildren(el("span", { textContent: `Decks with ${name}` }),
-        el("span", { className: "other", textContent: `All ${lead} decks` }));
-      $("with-chart-note").textContent = `Share of games won by ${lead} tournament decks each month. Faded: under `
-        + `${MIN_RESULT_DECKS} decks with ${name} that month.`;
-      monthChart($("with-chart"), months, {
-        label: `${name} tournament win rate by month`, percent: true,
-        value: r => (r.games ? r.wins / r.games : null), other: r => (r.allGames ? r.allWins / r.allGames : null),
-        few: r => r.decks < MIN_RESULT_DECKS,
-        tip: r => `${monthName(r.month)}: ${r.games ? `${percent(r.wins / r.games)} of ${r.games.toLocaleString()} games (${decksText(r.decks)})` : "no decks"}`
-          + (r.allGames ? ` · all decks ${percent(r.allWins / r.allGames)}` : ""),
-      });
-    }
-  };
+  const drawTime = () => overTime("with", { name, lead, shard, byMonth, months }, kind, k => { kind = k; drawTime(); });
 
   const w = tournament?.w;
   // On a phone, fewer cards around it, so their names have room
@@ -589,7 +595,7 @@ let drawings = 0; // each drawing's clip shapes get ids of their own: with the s
 // another's, which doesn't work from one that's hidden (the combos' graph while the packages' shows)
 function graphChart(box, graph, opts) {
   const drawing = ++drawings;
-  const { hint, legend, label: nameOf, tip, onPick = null, breadcrumb = null, title = "", win = null, lineTip = null } = opts;
+  const { hint, legend, label: nameOf, tip, onPick = null, onHub = null, breadcrumb = null, title = "", win = null, lineTip = null } = opts;
   box.replaceChildren();
   // win: {lists, w, sets(node) -> its cards}, the tournament decks to tell win rates from (none: no Win rate)
   const ties = win?.lists ? winTies(win.lists, win.w, new Map(graph.nodes.map(n => [n.key, win.sets(n)])),
@@ -849,16 +855,18 @@ function graphChart(box, graph, opts) {
         svgEl("text", { class: "held", "text-anchor": "middle", x: bx.toFixed(1), y: (by + 4.5).toFixed(1) }, text));
     }
     g.append(svgEl("circle", { class: "ring", r }));
-    if (n !== hub) {
+    // The hub picked only with onHub (a package's own node: its details)
+    const pick = n === hub ? onHub : onPick;
+    if (n !== hub || onHub) {
       g.setAttribute("tabindex", "0");
       g.setAttribute("role", "button");
       g.setAttribute("aria-label", tipOf(n));
-      if (onPick) {
-        g.addEventListener("click", () => onPick(n));
+      if (pick) {
+        g.addEventListener("click", () => pick(n));
         g.addEventListener("keydown", e => {
           if (e.key !== "Enter" && e.key !== " ") return;
           e.preventDefault();
-          onPick(n);
+          pick(n);
         });
       }
     }
@@ -966,7 +974,8 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
       title: `${title(cards)}: its cards, and the cards decks with it add most`,
       breadcrumb: [[`All ${nouns}`, map], [title(cards), null]],
       hint: `The ${noun} in the middle, ${have ? "the cards of it your deck runs" : "its cards"} beside it, linked to each other; further `
-        + `out, the cards decks with it add most${have ? " that your deck runs too" : ""}. Pick a card to open it.`,
+        + `out, the cards decks with it add most${have ? " that your deck runs too" : ""}. Pick a card to open it, or the ${noun} for `
+        + "its price, tournament results and trends.",
       legend: {
         together: "Decks that play one tend to play the other (thicker: more so)",
         apart: "Decks play one or the other, rarely both",
@@ -974,7 +983,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
       label: n => ({ text: n.card === undefined ? title(cards) : front(n.card), art: n.card ?? cards.slice(0, 2) }),
       tip: n => {
         if (n.key === "pkg") return `${cards.map(front).join(", ")}${what(cards)}: ${percent(k / m)} of ${these} run all of them (${decksText(k)})`
-          + (n.lift === undefined ? "" : `; ${higher(n, "them", "none")}`);
+          + (n.lift === undefined ? "" : `; ${higher(n, "them", "none")}`) + `. Pick it for the ${noun}'s price, results and trends.`;
         const bits = n.kind === "extra"
           ? [`${percent(n.base)} of decks without the ${noun}, ${percent(n.with)} of the ${decksText(k)} with it`]
           : [`in ${share(n.decks)}`];
@@ -982,6 +991,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
         return `${names[n.card]}: ${[...bits, ...yours(n)].join("; ")}`;
       },
       onPick: n => openByNumber(n.card),
+      onHub: () => openPackage(cards, { shard, names, lead, these, lists, w, period, makes: makes.get(cards.join(".")), decks: k, all: m }),
       win: lists && { lists, w, sets: n => n.cards ?? [n.card] },
       lineTip: (e, a, b) => pairText(pairCounts(shard, a.cards ?? [a.card], b.cards ?? [b.card], members),
         a.cards ? title(a.cards) : front(a.card), b.cards ? title(b.cards) : front(b.card)),
@@ -989,6 +999,52 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
   };
   const opened = packages.find(p => p.cards.join(".") === box.dataset.open);
   opened ? open(opened.cards) : map();
+}
+
+// A package's (or combo's) details, opened from the middle of its graph: its cards and what they cost (each
+// at its cheapest printing), cheaper cards for any of them, how its tournament decks do (lists, window w,
+// "the last <period>"), and its play rate and tournament win rate over time. decks: of all (these), the
+// ones running it; makes: what a combo makes
+let packageKind = "play"; // the chart shown last, kept from package to package
+async function openPackage(cards, { shard, names, lead, these, lists, w, period, makes, decks, all }) {
+  const dialog = $("package-modal"), opened = cards.join(".");
+  const still = () => dialog.open && dialog.dataset.cards === opened; // not closed, or another opened, meanwhile
+  dialog.dataset.cards = opened;
+  const front = c => frontName(names[c]);
+  const title = cards.map(front).join(" + ");
+  const price = c => index.columns.price[c], cost = c => (price(c) >= 0 ? money.formatUsd(price(c) / 100) : "no price");
+  $("package-name").textContent = title;
+  $("package-what").textContent = `${percent(decks / all)} of ${these} run all of them (${decksText(decks)})${makes ? `; makes ${makes}` : ""}.`;
+  $("package-tiles").replaceChildren(...cards.map(c => miniCard(c, cost(c))));
+  const priced = cards.filter(c => price(c) >= 0), total = priced.reduce((sum, c) => sum + price(c), 0);
+  $("package-price").replaceChildren(...(priced.length ? [`${cards.length === 2 ? "Both" : `All ${cards.length}`} for `,
+    el("strong", { textContent: money.formatUsd(total / 100) }), ", each at its cheapest printing"
+      + (priced.length < cards.length ? ` (${cards.length - priced.length} without a price)` : "") + "."] : ["No prices for these cards."]));
+  // In tournaments: as on Test a package
+  $("package-tournaments").hidden = !lists;
+  if (lists) {
+    const { tiles, note } = packageView(lists, cards, w, lead, period);
+    $("package-stats").replaceChildren(...tiles);
+    $("package-stats-note").textContent = note;
+  }
+  $("package-alts").hidden = true;
+  if (!dialog.open) dialog.showModal(); // before the chart: it's drawn at the size it's shown at
+  // Over time: from the first month with enough decks, as a card's
+  const byMonth = playRateByMonth(shard, cards);
+  byMonth.splice(0, Math.max(0, byMonth.findIndex(r => r.decks >= FEW_MONTH_DECKS)));
+  const months = lists ? resultsByMonth(lists, cards) : [];
+  $("package-time").hidden = byMonth.filter(r => r.decks).length < 2 && !months.some(r => r.decks);
+  const draw = () => overTime("package", { name: `all of ${title}`, lead, shard, byMonth, months }, packageKind, k => { packageKind = k; draw(); });
+  if (!$("package-time").hidden) draw();
+  // Cheaper cards for any of its cards
+  const alts = await Promise.all(cards.map(altsOf));
+  const rows = await Promise.all(cards.flatMap((c, i) => (alts[i]?.length ? [Promise.all(alts[i].map(cardInfo)).then(infos => el("li", {},
+    el("small", { textContent: `For ${front(c)} (${cost(c)}): ` }),
+    ...infos.flatMap((info, j) => [j ? ", " : "", el("button", { type: "button", className: "term", textContent: info.name,
+      onclick: () => openCard(info.id, alts[i][j]) }), " ", el("small", { textContent: cost(alts[i][j]) })])))] : [])));
+  if (!still() || !rows.length) return;
+  $("package-alts-list").replaceChildren(...rows);
+  $("package-alts").hidden = false;
 }
 
 // A commander's packages (findPackages'), strongest first, compared among decks of the same build, as tuned
@@ -2338,6 +2394,27 @@ function statTile(label, value, note, tone) {
     el("span", { className: `stat-note ${tone ?? ""}`, textContent: note }));
 }
 
+// A package's results in a commander's tournament decks (lists, over window w, "the last <periodText>"): stat
+// tiles, and a note on them
+function packageView(data, cards, w, lead, periodText) {
+  const r = packageResults(data, cards, w);
+  const one = cards.length === 1;
+  const sides = s => `${s.decks.toLocaleString()} ${s.decks === 1 ? "deck" : "decks"}, ${s.games.toLocaleString()} games`
+    + (s.cutDecks ? `; ${percent(s.cuts / s.cutDecks)} made the top cut` : "");
+  const sure = r.lift !== null && Math.abs(r.evidence) >= SIGNAL;
+  return {
+    tiles: [
+      statTile(`${one ? "With it" : "With all of them"}: win rate`, r.all.games ? percent1(r.all.wins / r.all.games) : "–", sides(r.all)),
+      statTile(`${one ? "Without it" : "With none"}: win rate`, r.none.games ? percent1(r.none.wins / r.none.games) : "–", sides(r.none)),
+      r.lift === null ? statTile("Difference", "–", `Too few decks ${r.all.decks ? "without" : "with"} ${one ? "it" : "them"} to compare`)
+        : statTile("Difference", points(r.lift), sure ? `A clearly ${r.lift > 0 ? "higher" : "lower"} win rate with ${one ? "it" : "them"}`
+          : "Too few decks to be sure yet", sure ? (r.lift > 0 ? "up" : "down") : ""),
+    ],
+    note: (r.some.decks ? `${r.some.decks.toLocaleString()} ${r.some.decks === 1 ? "deck plays" : "decks play"} only some of them, left out. ` : "")
+      + `In the last ${periodText}. As for single cards, both sides are pulled toward ${lead}'s win rate, so a few decks need a big difference to show one; `
+      + "and a card can stand for a style of build rather than win on its own.",
+  };
+}
 // Every commander's results and each card's across commanders (decks/results/index.json; null: none yet)
 let resultsIndex;
 const getResultsIndex = () => (resultsIndex ??= getJson("decks/results/index.json").catch(() => null));
@@ -2420,29 +2497,9 @@ function showResults(key, results, names, released, onPeriod) {
     if (!pkg.length) return;
     const shown = pkg, data = await getLists();
     if (shown !== pkg) return; // changed while loading
-    const { tiles, note } = packageView(data, pkg);
+    const { tiles, note } = packageView(data, pkg, w, lead, period());
     $("package-result").replaceChildren(...tiles);
     $("package-note").textContent = note;
-  }
-  // A package's results over the period shown: stat tiles, and a note on them
-  function packageView(data, cards) {
-    const r = packageResults(data, cards, w);
-    const one = cards.length === 1;
-    const sides = s => `${s.decks.toLocaleString()} ${s.decks === 1 ? "deck" : "decks"}, ${s.games.toLocaleString()} games`
-      + (s.cutDecks ? `; ${percent(s.cuts / s.cutDecks)} made the top cut` : "");
-    const sure = r.lift !== null && Math.abs(r.evidence) >= SIGNAL;
-    return {
-      tiles: [
-        statTile(`${one ? "With it" : "With all of them"}: win rate`, r.all.games ? percent1(r.all.wins / r.all.games) : "–", sides(r.all)),
-        statTile(`${one ? "Without it" : "With none"}: win rate`, r.none.games ? percent1(r.none.wins / r.none.games) : "–", sides(r.none)),
-        r.lift === null ? statTile("Difference", "–", `Too few decks ${r.all.decks ? "without" : "with"} ${one ? "it" : "them"} to compare`)
-          : statTile("Difference", points(r.lift), sure ? `A clearly ${r.lift > 0 ? "higher" : "lower"} win rate with ${one ? "it" : "them"}`
-            : "Too few decks to be sure yet", sure ? (r.lift > 0 ? "up" : "down") : ""),
-      ],
-      note: (r.some.decks ? `${r.some.decks.toLocaleString()} ${r.some.decks === 1 ? "deck plays" : "decks play"} only some of them, left out. ` : "")
-        + `In the last ${period()}. As for single cards, both sides are pulled toward ${lead}'s win rate, so a few decks need a big difference to show one; `
-        + "and a card can stand for a style of build rather than win on its own.",
-    };
   }
   // The example to test: a niche card, one that some but not most of its decks play (over two years)
   const last = results.windows.length - 1;
@@ -3255,12 +3312,16 @@ async function showTrends() {
 // alternatives()), under a card's prices in its details
 const ALT_BLOCK = 256; // ALT_BLOCK in build_prices.py
 const altBlocks = new Map();
+// A card's cheaper alternatives (card numbers; undefined: none)
+async function altsOf(card) {
+  const k = Math.floor(card / ALT_BLOCK);
+  if (!altBlocks.has(k)) altBlocks.set(k, getJson(`prices/alts/${k}.json`).catch(() => ({}))); // none for that block: {}
+  return (await altBlocks.get(k))[card % ALT_BLOCK];
+}
 async function showAlternatives(card) {
   $("card-alts").hidden = true;
   if (card === null || !index) return;
-  const k = Math.floor(card / ALT_BLOCK);
-  if (!altBlocks.has(k)) altBlocks.set(k, getJson(`prices/alts/${k}.json`).catch(() => ({}))); // none for that block: {}
-  const alts = (await altBlocks.get(k))[card % ALT_BLOCK];
+  const alts = await altsOf(card);
   if (!alts || openedCard !== card) return;
   const infos = await Promise.all(alts.map(cardInfo));
   if (openedCard !== card) return;

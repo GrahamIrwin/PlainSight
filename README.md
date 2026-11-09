@@ -262,7 +262,11 @@ after the vector space search behind the card search)
    (`packageGraph`, "All packages › Displacer Kitten + Teferi" to go back): its cards close around it,
    every pair of them linked whatever its strength (every package's and combo's graph alike: the line shows
    how the package does, in Play rate and in Win rate), and further out the cards decks running it add most (played far
-   more by them than by the other decks; 4 on a phone). Picking a card opens it.
+   more by them than by the other decks; 4 on a phone). Picking a card opens it; picking the package in
+   the middle opens its details (`openPackage`): its cards and their prices, all of them together at each
+   one's cheapest printing, cheaper cards that do the same thing for any of them, its cEDH tournament
+   results (as Test a package shows them), and its play rate and tournament win rate by month (as a card's
+   Over time). Combos open the same way, with what they make.
 
    ![Derevi's package map: packages as nodes, each showing half of its two cards' art, linked when the same decks run them, the most linked in the middle; Bloom Tender + Faeburrow Elder pointed at, its name shown and 41% of these decks run all of them (1,323 decks)](docs/images/screenshot-packages.webp)
 
