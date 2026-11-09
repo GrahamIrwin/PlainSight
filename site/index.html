@@ -691,7 +691,6 @@
     :is(.synergy, .synergy-legend) :is(line, path) { stroke-width: 3; stroke-linecap: round; }
     :is(.synergy, .synergy-legend) .pos { stroke: var(--up); }
     :is(.synergy, .synergy-legend) .neg { stroke: var(--down); }
-    :is(.synergy, .synergy-legend) .won-link { stroke-dasharray: 6 5; stroke-linecap: butt; }
     /* Win rate view: lines green or red by how the decks with both do; grey dots, too few to tell */
     :is(.synergy, .synergy-legend) .tie.few { stroke: var(--ink-faint); stroke-dasharray: 0.1 7; stroke-width: 3.5; opacity: .7; }
     .graph-views { margin: 0 0 8px; }
@@ -704,9 +703,6 @@
     .synergy .node.missing .ring { stroke: var(--ink-faint); stroke-dasharray: 5 4; }
     .synergy .node.wins .ring { stroke: var(--up); stroke-width: 2.5; }
     .synergy .node.loses .ring { stroke: var(--down); stroke-width: 2.5; }
-    .synergy .node.won .back { fill: var(--accent-soft); }
-    .synergy .node.won .ring { stroke: var(--up); stroke-width: 2; }
-    .synergy .node.won text.inside { fill: var(--up); font-weight: bold; font-size: 16px; }
     .synergy .node:hover .ring, .synergy .node:focus-visible .ring { stroke: var(--focus); stroke-width: 3; }
     .synergy .hub { cursor: default; }
     .synergy .node.missing image { opacity: .35; }
@@ -716,7 +712,7 @@
     .synergy rect.held { fill: var(--ink); }
     .synergy .node text.held { fill: var(--paper); stroke: none; font-size: 12px; font-weight: bold; font-variant-numeric: tabular-nums; opacity: 1; }
     .synergy-legend .held-sample { padding: 0 6px; border-radius: 9px; background: var(--ink); color: var(--paper); font-size: 12px; font-weight: bold; }
-    .synergy .node.missing text:not(.inside) { opacity: .7; }
+    .synergy .node.missing text { opacity: .7; }
     .graph-crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; font-size: 16px; color: var(--ink); }
     .graph-crumbs .sep { color: var(--ink-faint); }
     .graph-crumbs .link-button { font: inherit; }

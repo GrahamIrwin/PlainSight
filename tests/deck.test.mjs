@@ -427,7 +427,7 @@ function clearOfLines(nodes, lines, least = 0.05) {
   }
 }
 
-test("synergy graph: partners around the card, every line a correlation, the Won node to the right", () => {
+test("synergy graph: partners around the card, every line a correlation", () => {
   // 120 decks, card 100 in the first 60. Among those: 101 and 102 in the even ones, 103 and 104 in
   // every third, 105 in the first 20, 106 in the last 20; each also in 6 of the other 60. 107: every deck.
   const plays = i => i < 60
@@ -448,9 +448,7 @@ test("synergy graph: partners around the card, every line a correlation, the Won
   assert.deepEqual(graph.won.map(x => x.card).sort(), [105, 106]); // only cards in the graph
   assert.ok(!byCard.has(200) && !byCard.has(107)); // 107: in every deck, so no more with 100 than without
   assert.ok(byCard.get(105).lift > 0 && byCard.get(106).lift < 0);
-  const wonNode = byCard.get(null);
-  assert.equal(wonNode.kind, "won");
-  assert.ok(graph.nodes.every(n => n === wonNode || n.x < wonNode.x));
+  assert.ok(!byCard.has(null) && graph.nodes.length === 7); // no Won node
   // Spokes are each partner's correlation with the card: 101 is in half of 100's decks and few others
   assert.ok(graph.edges.filter(e => e.kind === "spoke").every(e => e.strength >= 0.2 && e.strength <= 1));
   // Every card correlated clearly enough with it (here 6), the strongest n at most
@@ -474,9 +472,9 @@ test("synergy graph: partners around the card, every line a correlation, the Won
     for (const n of g.nodes) assert.ok(n.x >= 0 && n.x <= 1 && n.y >= 0 && n.y <= 1, `${n.card} at ${n.x}, ${n.y}`);
     for (const a of g.nodes) for (const b of g.nodes) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= 0.1);
     const at = new Map(g.nodes.map(n => [n.card, n]));
-    clearOfLines(g.nodes, [...g.edges.map(e => [at.get(e.a), at.get(e.b)]), ...g.won.map(x => [at.get(null), at.get(x.card)])]);
+    clearOfLines(g.nodes, g.edges.map(e => [at.get(e.a), at.get(e.b)]));
   }
-  // No results: no Won node, the card in the middle
+  // No results: no lifts, the card in the middle
   const plain = synergyGraph(shard, null, 100, 0);
   assert.deepEqual(plain.won, []);
   assert.ok(!plain.nodes.some(n => n.kind === "won"));
@@ -505,7 +503,7 @@ const spread = g => {
 };
 const edgeOf = (g, a, b) => g.edges.find(e => (e.a === a && e.b === b) || (e.a === b && e.b === a));
 
-test("package map: packages run by enough decks, linked by how often decks run both, the Won node to the right", () => {
+test("package map: packages run by enough decks, linked by how often decks run both", () => {
   const shard = decodeShard(pkgShard), all = range(0, 200);
   const map = packageMap(shard, pkgs, all, { lists: pkgLists, w: 0 });
   assert.deepEqual(map, packageMap(shard, pkgs, all, { lists: pkgLists, w: 0 })); // the same every time
@@ -524,16 +522,15 @@ test("package map: packages run by enough decks, linked by how often decks run b
   assert.deepEqual(map.won.map(x => x.key).sort(), ["p0", "p2"]);
   assert.ok(byKey.get("p0").lift > 0 && byKey.get("p2").lift < 0 && !("lift" in byKey.get("p1")));
   assert.ok(map.won.every(x => x.tested.every(k => k >= 10)) && byKey.get("p0").tested === map.won.find(x => x.key === "p0").tested);
-  assert.equal(byKey.get("won").x, 1);
-  assert.ok(map.nodes.every(n => n.key === "won" || n.x < 1)); // the Won node rightmost
-  clearOfLines(map.nodes, [...map.edges.map(e => [byKey.get(e.a), byKey.get(e.b)]), ...map.won.map(x => [byKey.get("won"), byKey.get(x.key)])]);
+  assert.ok(map.nodes.every(n => n.kind === "package")); // no Won node
+  clearOfLines(map.nodes, map.edges.map(e => [byKey.get(e.a), byKey.get(e.b)]));
   // The n most run; within a build (members); a pasted deck's share of each
   assert.deepEqual(packageMap(shard, pkgs, all, { n: 2 }).nodes.map(n => n.key).sort(), ["p0", "p1"]);
   assert.deepEqual(packageMap(shard, pkgs, range(100, 200)).nodes.map(n => n.key).sort(), ["p2", "p3", "p4"]); // 4 of 100 is enough
   const mine = packageMap(shard, pkgs, all, { have: new Set([10, 11, 12]) });
   assert.deepEqual(mine.nodes.map(n => [n.key, n.have]).sort(), [["p0", "all"], ["p1", "some"], ["p2", "none"], ["p4", "none"]]);
   assert.ok(!("have" in map.nodes[0]));
-  // No lists: no Won node, the ring in the middle
+  // No lists: no lifts, the ring in the middle
   const plain = packageMap(shard, pkgs, all);
   assert.deepEqual(plain.won, []);
   assert.ok(!plain.nodes.some(n => n.kind === "won"));
@@ -541,7 +538,7 @@ test("package map: packages run by enough decks, linked by how often decks run b
   assert.deepEqual(packageMap(shard, [], all), { nodes: [], edges: [], won: [] });
 });
 
-test("package graph: its cards in the middle, what decks running it add around them, the Won node to the right", () => {
+test("package graph: its cards in the middle, what decks running it add around them", () => {
   const shard = decodeShard(pkgShard), all = range(0, 200);
   const graph = packageGraph(shard, [10, 11], all, { lists: pkgLists, w: 0 });
   assert.deepEqual(graph, packageGraph(shard, [10, 11], all, { lists: pkgLists, w: 0 })); // the same every time
@@ -565,12 +562,12 @@ test("package graph: its cards in the middle, what decks running it add around t
   assert.deepEqual(graph.won.map(x => x.key).sort(), ["c21", "pkg"]);
   assert.ok(center.lift > 0 && byKey.get("c21").lift > 0 && !("lift" in byKey.get("c12")));
   assert.ok(graph.won.every(x => x.tested.length === 2) && center.tested.every(k => k >= 10));
-  assert.equal(byKey.get("won").x, 1);
-  // No spoke (or the line to Won) runs over a card of the package, and its two cards don't face each other
+  assert.ok(!byKey.has("won")); // no Won node
+  // No spoke runs over a card of the package, and its two cards don't face each other
   // across the middle
   const angle = n => Math.atan2(n.y - center.y, n.x - center.x);
   const cores = graph.nodes.filter(n => n.kind === "core");
-  for (const c of cores) for (const t of [...extras, byKey.get("won")]) {
+  for (const c of cores) for (const t of extras) {
     assert.ok(Math.abs(Math.atan2(Math.sin(angle(c) - angle(t)), Math.cos(angle(c) - angle(t)))) > 0.35, `${c.key} by ${t.key}`);
   }
   assert.ok(Math.abs((cores[0].x + cores[1].x) / 2 - center.x) > 0.08);

@@ -570,12 +570,11 @@ async function showCardWith(card) {
 }
 
 // A graph in box: a hint line above (what's pointed at), the graph, and a legend of the kinds of line in it.
-// graph = {nodes: [{key, x, y, kind}], edges: [{a, b, strength}], won: [{key, lift}]} (layout in a 0..1 box).
-// Nodes: card art in circles ("center"/"package" big, "extra" small), "won" a Won circle; node.have false or
-// "none" faded with a dashed ring, "some" half faded. opts: {hint, legend: {together, apart, more, less},
+// graph = {nodes: [{key, x, y, kind}], edges: [{a, b, strength}]} (layout in a 0..1 box).
+// Nodes: card art in circles ("center"/"package" big, "extra" small); node.have false or
+// "none" faded with a dashed ring, "some" half faded. opts: {hint, legend: {together, apart},
 // label(node) -> {text, art}, tip(node), onPick(node) or null, breadcrumb: [[text, onClick or null]], title}.
 // Pointing at a node says why it's there; picking it calls onPick
-const shade = strength => (0.2 + 0.8 * Math.min(1, Math.abs(strength) / 0.6)).toFixed(2);
 // The ranked line colours: each fifth of the ranking, dark green to pale grey
 const TIERS = 5;
 const tierColor = t => `color-mix(in oklab, var(--tie-strong) ${100 - 25 * t}%, var(--tie-weak))`;
@@ -593,11 +592,10 @@ function graphChart(box, graph, opts) {
   const { hint, legend, label: nameOf, tip, onPick = null, breadcrumb = null, title = "", win = null, lineTip = null } = opts;
   box.replaceChildren();
   // win: {lists, w, sets(node) -> its cards}, the tournament decks to tell win rates from (none: no Win rate)
-  const ties = win?.lists ? winTies(win.lists, win.w, new Map(graph.nodes.filter(n => n.kind !== "won").map(n => [n.key, win.sets(n)])),
+  const ties = win?.lists ? winTies(win.lists, win.w, new Map(graph.nodes.map(n => [n.key, win.sets(n)])),
     graph.edges.map(e => [e.a, e.b])) : null;
   const canWin = ties && ties.decks >= 2 * MIN_RESULT_DECKS;
   const winView = canWin && graphView === "win";
-  if (winView) graph = { ...graph, nodes: graph.nodes.filter(n => n.kind !== "won"), won: [] }; // its lines say it
   const crumbs = breadcrumb && el("nav", { className: "graph-crumbs", ariaLabel: "Graph" }, ...breadcrumb.flatMap(([text, go], i) => [
     i ? el("span", { className: "sep", ariaHidden: "true", textContent: "›" }) : "",
     go ? el("button", { type: "button", className: "link-button", textContent: text, onclick: go })
@@ -627,7 +625,6 @@ function graphChart(box, graph, opts) {
   // Every name under its node, as wide as the room beside it allows. The hub (a card's or a package's own
   // node) is drawn bigger
   const byKey = new Map(graph.nodes.map(n => [n.key, n]));
-  const wonNode = byKey.get("won");
   const hub = graph.nodes.find(n => n.kind === "center" || n.key === "pkg");
   // Packages: their names take two lines, so more room under them
   const packages = graph.nodes.some(n => n.kind === "package" && n !== hub);
@@ -644,9 +641,8 @@ function graphChart(box, graph, opts) {
   const at = n => [ox + (n.x - x0) * sx, top + (n.y - y0) * sy];
   const radius = n => Math.round(size * (n === hub ? 1.3 : GRAPH_SIZES[n.kind] ?? 1));
   const short = (t, chars) => (t.length > chars ? t.slice(0, Math.max(1, chars - 1)).trimEnd() + "…" : t);
-  // Ringed green or red: what the Won node links to; in Win rate, nodes whose decks clearly win more or less
-  const lift = winView ? new Map([...ties.nodes].filter(([, x]) => x.lift !== null && Math.abs(x.evidence) >= SIGNAL).map(([k, x]) => [k, x.lift]))
-    : new Map(graph.won.map(x => [x.key, x.lift]));
+  // Ringed green or red, in Win rate: nodes whose decks clearly win more or less
+  const lift = new Map(winView ? [...ties.nodes].filter(([, x]) => x.lift !== null && Math.abs(x.evidence) >= SIGNAL).map(([k, x]) => [k, x.lift]) : []);
   // The room for a name under a node: the nearest node across whose circle or name is level with it (each
   // name centred under its node, so two level names share the space between them; a circle, half of it)
   const nameRows = n => (n.kind === "package" && n !== hub ? 2 : 1);
@@ -689,8 +685,7 @@ function graphChart(box, graph, opts) {
   }
   root.append(defs);
   // Played together: ranked, strongest first, and by their fifth of the ranking thick dark green to thin
-  // pale grey; rarely together: dotted. Won's: green for winning more, red
-  // (kept for this) for less, the bigger the difference the more opaque
+  // pale grey; rarely together: dotted
   const lines = [];
   // How close a path (points) comes to the edge of a node it doesn't join: negative, under it
   const clearance = (pts, a, b) => Math.min(...graph.nodes.filter(n => n !== a && n !== b).map(n => {
@@ -759,11 +754,6 @@ function graphChart(box, graph, opts) {
       root.append(node, ...(texts.has(e) ? [hitFor(node, e)] : []));
     }
   }
-  // A win rate 5 points higher or lower shows about as strongly as a correlation of 0.3
-  for (const x of graph.won) root.append(line(wonNode, byKey.get(x.key),
-    { class: `won-link ${x.lift >= 0 ? "pos" : "neg"}`, "stroke-opacity": shade(6 * x.lift) }));
-
-  const lifts = graph.won.map(x => x.lift);
   // A legend sample: segments, each {class, style or opacity}
   const sample = (segments, long = 10) => {
     const svg = svgEl("svg", { viewBox: `0 0 ${(long + 2) * segments.length + 4} 10`, "aria-hidden": "true",
@@ -781,8 +771,6 @@ function graphChart(box, graph, opts) {
   ] : [
     together.length && [sample(Array.from({ length: TIERS }, (_, t) => ({ class: "tie", style: tierStyle(t) }))), legend.together],
     ranked.length > together.length && [sample([{ class: "tie apart" }], 28), legend.apart],
-    lifts.some(l => l > 0) && [sample([{ class: "won-link pos" }], 28), legend.more],
-    lifts.some(l => l < 0) && [sample([{ class: "won-link neg" }], 28), legend.less],
     graph.nodes.some(n => n.held !== undefined) && [el("span", { className: "held-sample", textContent: "2/4" }),
       "Your deck has only some of its cards (2 of 4)"],
   ]).filter(Boolean).map(([svg, text]) => el("li", {}, svg, text)));
@@ -838,24 +826,21 @@ function graphChart(box, graph, opts) {
     const g = svgEl("g", { class: `node ${n.kind}${n === hub ? " hub" : ""}${lift.has(n.key) ? lift.get(n.key) > 0 ? " wins" : " loses" : ""}${have}`,
       transform: `translate(${x.toFixed(1)},${y.toFixed(1)})` });
     g.append(svgEl("title", {}, tipOf(n)), svgEl("circle", { class: "back", r }));
-    if (n === wonNode) g.append(svgEl("text", { class: "inside", "text-anchor": "middle", y: 5.5 }, "Won"));
-    else {
-      // Its card's art; two cards' (a package's): the left half of the circle the first's, the right the second's
-      const { art } = nameOf(n);
-      const arts = (Array.isArray(art) ? art : [art]).filter(a => a !== null && a !== undefined).slice(0, 2);
-      arts.forEach((a, i) => {
-        const half = arts.length === 2 ? (i ? 1 : -1) : 0; // each art's middle in the middle of its half
-        const img = svgEl("image", { x: -r * 1.4 + half * r / 2, y: -r, width: r * 2.8, height: r * 2,
-          preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#syn-clip-${drawing}-${r}${half ? (half < 0 ? "-l" : "-r") : ""})` });
-        cardInfo(a).then(info => img.setAttribute("href", artCrop(info.id)));
-        g.append(img);
-      });
-      if (arts.length === 2) g.append(svgEl("line", { class: "split", x1: 0, y1: -r, x2: 0, y2: r }));
-      // A package's own node is named by the breadcrumb above: a name under it would run into its cards
-      if (!(n === hub && n.kind === "package")) {
-        labels.set(n, label(n, x, y, r));
-        g.append(labels.get(n));
-      }
+    // Its card's art; two cards' (a package's): the left half of the circle the first's, the right the second's
+    const { art } = nameOf(n);
+    const arts = (Array.isArray(art) ? art : [art]).filter(a => a !== null && a !== undefined).slice(0, 2);
+    arts.forEach((a, i) => {
+      const half = arts.length === 2 ? (i ? 1 : -1) : 0; // each art's middle in the middle of its half
+      const img = svgEl("image", { x: -r * 1.4 + half * r / 2, y: -r, width: r * 2.8, height: r * 2,
+        preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#syn-clip-${drawing}-${r}${half ? (half < 0 ? "-l" : "-r") : ""})` });
+      cardInfo(a).then(info => img.setAttribute("href", artCrop(info.id)));
+      g.append(img);
+    });
+    if (arts.length === 2) g.append(svgEl("line", { class: "split", x1: 0, y1: -r, x2: 0, y2: r }));
+    // A package's own node is named by the breadcrumb above: a name under it would run into its cards
+    if (!(n === hub && n.kind === "package")) {
+      labels.set(n, label(n, x, y, r));
+      g.append(labels.get(n));
     }
     // Only some of a package's cards in your deck: how many, on a badge
     if (n.held !== undefined) {
@@ -868,7 +853,7 @@ function graphChart(box, graph, opts) {
       g.setAttribute("tabindex", "0");
       g.setAttribute("role", "button");
       g.setAttribute("aria-label", tipOf(n));
-      if (n !== wonNode && onPick) {
+      if (onPick) {
         g.addEventListener("click", () => onPick(n));
         g.addEventListener("keydown", e => {
           if (e.key !== "Enter" && e.key !== " ") return;
@@ -888,29 +873,24 @@ function graphChart(box, graph, opts) {
 }
 
 // The card dialog's synergy graph (synergyGraph's): the card in the middle, the cards its decks play more
-// with it around it, and a Won node linked to those its tournament decks win more or less with
+// with it around it
 // A graph line's numbers in words: how many of the decks play (or run) both its ends, and what share of those with each
 const pairText = (c, a, b, verb = "play") => `${a} and ${b}: ${c.both.toLocaleString()} of ${decksText(c.decks)} ${verb} both, `
   + `${c.a ? percent(c.both / c.a) : "–"} of the ${decksText(c.a)} with ${a} and ${c.b ? percent(c.both / c.b) : "–"} of the ${decksText(c.b)} with ${b}`;
 function synergyChart(box, graph, { names, lead, shard }, name, lists = null, w = 0) {
-  const key = c => (c === null ? "won" : `c${c}`);
+  const key = c => `c${c}`;
   graphChart(box, {
     nodes: graph.nodes.map(n => ({ ...n, key: key(n.card) })),
     edges: graph.edges.map(e => ({ ...e, a: key(e.a), b: key(e.b) })),
-    won: graph.won.map(x => ({ key: key(x.card), lift: x.lift })),
   }, {
     title: `Cards ${lead} decks play more with ${name}`,
     hint: "Point at a card for its numbers, or pick one to open it.",
     legend: {
       together: "Decks that play one tend to play the other (thicker: more so)",
       apart: "Decks play one or the other, rarely both",
-      more: "Tournament decks win more with it",
-      less: "Tournament decks win less with it",
     },
     label: n => ({ text: frontName(names[n.card]), art: n.card }),
     tip: n => {
-      if (n.kind === "won") return `Won: ${lead} tournament decks with ${name} win more often with the cards it has green lines to, `
-        + "less often with those it has red lines to.";
       if (n.kind === "center") return names[n.card];
       const bits = [n.base !== undefined && `${percent(n.base)} → ${percent(n.with)} of decks with ${name} (${decksText(n.decksWith)})`,
         n.lift !== undefined && `tournament decks with both win ${n.lift > 0 ? "more" : "less"} than those with only ${name}`].filter(Boolean);
@@ -936,8 +916,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
   const title = cards => cards.slice(0, 2).map(front).join(" + ");
   const m = members.length;
   const share = k => `${percent(k / m)} of ${these} (${decksText(k)})`;
-  // "tournament decks with them: win rate 6.4 points higher than with none (120 decks against 300)" (the
-  // period's in the Won node's)
+  // "tournament decks with them: win rate 6.4 points higher than with none (120 decks against 300)"
   const higher = ({ lift, tested: [a, b] }, who, than) => `tournament decks with ${who}: win rate ${Math.abs(lift * 100).toFixed(1)} `
     + `points ${lift > 0 ? "higher" : "lower"} than with ${than} (${decksText(a)} against ${b.toLocaleString()})`;
   const yours = n => {
@@ -964,15 +943,10 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
       legend: {
         together: "Decks that run one tend to run the other (thicker: more so)",
         apart: "Decks run one or the other, rarely both",
-        more: "Tournament decks with it win more",
-        less: "Tournament decks with it win less",
       },
       label: n => ({ text: title(n.cards), art: n.cards.slice(0, 2) }),
-      tip: n => (n.kind === "won"
-        ? `Won, in tournaments of the last ${period}: green lines to the ${nouns} whose decks win more than those `
-          + "with none of it, red to those that win less."
-        : `${n.cards.map(front).join(", ")}${what(n.cards)}: ${percent(n.decks / m)} of ${these} run all of them (${decksText(n.decks)})`
-          + [...(n.lift === undefined ? [] : [higher(n, "them", "none")]), ...yours(n)].map(t => `; ${t}`).join("")),
+      tip: n => `${n.cards.map(front).join(", ")}${what(n.cards)}: ${percent(n.decks / m)} of ${these} run all of them (${decksText(n.decks)})`
+        + [...(n.lift === undefined ? [] : [higher(n, "them", "none")]), ...yours(n)].map(t => `; ${t}`).join(""),
       onPick: n => open(n.cards),
       win: lists && { lists, w, sets: n => n.cards },
       lineTip: (e, a, b) => pairText(pairCounts(shard, a.cards, b.cards, members), title(a.cards), title(b.cards), "run"),
@@ -983,7 +957,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
     const graph = packageGraph(shard, cards, members, { lists, w, have, mine: !!have, aspect: graphAspect(box), ...(box.clientWidth < 520 && { extra: 4 }) });
     const k = graph.nodes[0].decks;
     if (graph.nodes.length < 3) { // too little of it in a pasted deck to draw: say so, with the way back
-      graphChart(box, { nodes: [], edges: [], won: [] }, { breadcrumb: [[`All ${nouns}`, map], [title(cards), null]] });
+      graphChart(box, { nodes: [], edges: [] }, { breadcrumb: [[`All ${nouns}`, map], [title(cards), null]] });
       box.append(el("p", { className: "muted deck-lede", textContent: `Your deck runs ${graph.nodes.length - 1} of its `
         + `${cards.length} cards, and none of the cards decks with it add most.` }));
       return;
@@ -996,13 +970,9 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
       legend: {
         together: "Decks that play one tend to play the other (thicker: more so)",
         apart: "Decks play one or the other, rarely both",
-        more: "Tournament decks win more with it",
-        less: "Tournament decks win less with it",
       },
       label: n => ({ text: n.card === undefined ? title(cards) : front(n.card), art: n.card ?? cards.slice(0, 2) }),
       tip: n => {
-        if (n.kind === "won") return `Won, in tournaments of the last ${period}: green lines to what decks with the `
-          + `${noun} win more with, red to what they win less with.`;
         if (n.key === "pkg") return `${cards.map(front).join(", ")}${what(cards)}: ${percent(k / m)} of ${these} run all of them (${decksText(k)})`
           + (n.lift === undefined ? "" : `; ${higher(n, "them", "none")}`);
         const bits = n.kind === "extra"

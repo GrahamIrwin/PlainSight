@@ -241,8 +241,7 @@ after the vector space search behind the card search)
    green to thin pale grey, so a graph's ties are easy to tell apart; dotted lines are pairs
    rarely played together (one or the other: two packages, two color builds). Between the cards around it, only
    pairs that stand out from the rest show (the decks playing a card mostly share one build, so most
-   of its partners go together a little). With tournament results, dashed lines join a "Won" node to
-   the cards whose decks win clearly more (green) or less (red, used for nothing else) with them. Picking a card in the
+   of its partners go together a little); how tournament decks do is the Win rate view's (below). Picking a card in the
    lists or the graph opens it. The page's **Trends** section charts the decks
    made per month, over all of the commander's decks.
 
@@ -259,13 +258,11 @@ after the vector space search behind the card search)
    phone), named for its two strongest cards (half of each one's art on it; the name under it, cut short
    to fit, shows whole when it's pointed at), every line the correlation between decks running two
    packages, ranked and coloured like the synergy graph's, dotted for either/or packages (different
-   builds), and with tournament results a Won node joined to the packages whose decks clearly win
-   more (green) or less (red) than those with none of it. Picking a package swaps in its own graph
+   builds). Picking a package swaps in its own graph
    (`packageGraph`, "All packages › Displacer Kitten + Teferi" to go back): its cards close around it,
    every pair of them linked whatever its strength (every package's and combo's graph alike: the line shows
    how the package does, in Play rate and in Win rate), and further out the cards decks running it add most (played far
-   more by them than by the other decks; 4 on a phone), each tied to the Won node if decks with the
-   package and it win clearly more or less than those with the package alone. Picking a card opens it.
+   more by them than by the other decks; 4 on a phone). Picking a card opens it.
 
    ![Derevi's package map: packages as nodes, each showing half of its two cards' art, linked when the same decks run them, the most linked in the middle; Bloom Tender + Faeburrow Elder pointed at, its name shown and 41% of these decks run all of them (1,323 decks)](docs/images/screenshot-packages.webp)
 
@@ -289,7 +286,8 @@ after the vector space search behind the card search)
    (`winTies`, pulled toward the decks' win rate as for single cards): green for more, red for less,
    darker the clearer, grey dots where fewer than 10 decks play both; pointing at a line gives its
    numbers ("21.0% win rate in 125 decks (all 1,495 decks: 22.2%)"), and a node is ringed green or red
-   when its own decks clearly win more or less. The Won node isn't needed there, so it's left out.
+   when its own decks clearly win more or less. Play rate shows only play rates, so tournament results
+   are all in Win rate (a node's numbers, when pointed at, still say how its decks do).
 
    All three graphs (a card's, the package map, a package's) are laid out the same way
    (`layoutGraph`): nodes push each other apart and lines pull the cards they join together (the

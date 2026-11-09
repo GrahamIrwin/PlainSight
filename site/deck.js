@@ -839,11 +839,10 @@ export function winTies(lists, w, sets, pairs) {
 // decks playing the card, at least LINK and STAND_OUT above the typical pair's: those decks mostly share
 // one build, so most partners go together a little), each partner's TOGETHER_LINKS strongest at most;
 // "apart", partners rarely played together (APART or less: an either/or, like two packages or two color
-// builds), the clearest TOGETHER_LINKS a partner at most. With tournament results, a "Won" node (card
-// null) to the right, linked to the partners whose tournament decks win clearly more or less with them
-// (won: [{card, lift}], evidence 2 or more either way). The layout is the same for the same data (no
-// randomness), in a 0..1 box: partners linked to each other sit side by side, won ones nearest the Won
-// node. nodes: [{card, x, y, kind: "center" | "partner" | "won", ...partner row, phi, lift}]
+// builds), the clearest TOGETHER_LINKS a partner at most. With tournament results, won: the partners whose
+// tournament decks win clearly more or less with them ([{card, lift}], evidence 2 or more either way), the
+// lift on their nodes. The layout is the same for the same data (no randomness), in a 0..1 box: partners
+// linked to each other sit side by side. nodes: [{card, x, y, kind: "center" | "partner", ...partner row, phi, lift}]
 export const GRAPH_PARTNERS = 12, PARTNER_PHI = 0.2, LINK = 0.3, STAND_OUT = 0.12, TOGETHER_LINKS = 2, APART = -0.15;
 export function synergyGraph(shard, lists, card, w, { n = GRAPH_PARTNERS, link = LINK, min = MIN_PAIR_DECKS, aspect = 1 } = {}) {
   shard = decoded(shard);
@@ -890,13 +889,11 @@ export function synergyGraph(shard, lists, card, w, { n = GRAPH_PARTNERS, link =
   const lift = new Map(won.map(x => [x.card, x.lift]));
   if (!m) return { nodes: [{ card, x: 0.5, y: 0.5, kind: "center" }], edges, won };
   const keyOf = c => (c === card ? "hub" : `c${c}`);
-  const at = layoutGraph([{ key: "hub" }, ...partners.map(x => ({ key: keyOf(x.card) })), ...(won.length ? [{ key: "won" }] : [])],
-    edges.map(e => ({ a: keyOf(e.a), b: keyOf(e.b), strength: e.strength })),
-    { hub: "hub", won: won.length ? "won" : null, wonLinks: won.map(x => keyOf(x.card)), aspect });
+  const at = layoutGraph([{ key: "hub" }, ...partners.map(x => ({ key: keyOf(x.card) }))],
+    edges.map(e => ({ a: keyOf(e.a), b: keyOf(e.b), strength: e.strength })), { hub: "hub", aspect });
   const place = k => ({ x: at.get(k)[0], y: at.get(k)[1] });
   const nodes = [{ card, ...place("hub"), kind: "center" },
     ...partners.map(x => ({ ...x, ...place(keyOf(x.card)), kind: "partner", ...(lift.has(x.card) && { lift: lift.get(x.card) }) }))];
-  if (won.length) nodes.push({ card: null, ...place("won"), kind: "won" });
   return { nodes, edges, won };
 }
 
@@ -906,24 +903,23 @@ export function synergyGraph(shard, lists, card, w, { n = GRAPH_PARTNERS, link =
 // has, so the most linked sit in the middle and the least at the edges. A node too close to a line it's
 // not on is pushed off it, so no line runs under a node. hub: a key kept in the middle (a card's or a
 // package's own node); pulls: [{key, length}] held about that far from the hub with no line drawn (a
-// package's own cards); won: a key kept to the right of the rest, wonLinks the keys it has lines to.
-// degrees: how many lines each node has (a Map), when they're to count lines not drawn. aspect: the shape of the room it's drawn in (width / height), which it's spread to fit. Scaled into a 0..1
-// box, the Won node at its right. Returns {key: [x, y]}.
+// package's own cards). degrees: how many lines each node has (a Map), when they're to count lines not
+// drawn. aspect: the shape of the room it's drawn in (width / height), which it's spread to fit. Scaled
+// into a 0..1 box. Returns {key: [x, y]}.
 const GAP = 0.3, CLEAR = 0.1, STEPS = 600, STARTS = 10, MEET = 0.03, UNTANGLE = 25, UNTANGLE_STARTS = 4;
-function layoutGraph(nodes, links, { hub = null, pulls = [], won = null, wonLinks = [], aspect = 1, degrees = null } = {}) {
+function layoutGraph(nodes, links, { hub = null, pulls = [], aspect = 1, degrees = null } = {}) {
   const index = new Map(nodes.map((n, i) => [n.key, i]));
   const m = nodes.length;
-  const pinned = i => nodes[i].key === hub || nodes[i].key === won;
+  const pinned = i => nodes[i].key === hub;
   const degree = new Array(m).fill(0);
   if (degrees) nodes.forEach((n, i) => { degree[i] = degrees.get(n.key) ?? 0; });
   else for (const l of links) if (l.strength > 0 && l.a !== hub && l.b !== hub) { degree[index.get(l.a)]++; degree[index.get(l.b)]++; }
   const free = [...nodes.keys()].filter(i => !pinned(i)).sort((i, j) => degree[j] - degree[i] || String(nodes[i].key).localeCompare(String(nodes[j].key)));
-  const isFree = new Set(free), toWon = new Set(wonLinks.map(k => index.get(k)));
-  const drawn = links.map(l => [index.get(l.a), index.get(l.b), l.strength])
-    .concat(wonLinks.map(k => [index.get(won), index.get(k), 0.3]));
+  const isFree = new Set(free);
+  const drawn = links.map(l => [index.get(l.a), index.get(l.b), l.strength]);
   const springs = pulls.map(p => [index.get(hub), index.get(p.key), p.length]);
   const held = new Set(springs.map(([, j]) => j));
-  const w = won === null ? -1 : index.get(won), h = hub === null ? -1 : index.get(hub);
+  const h = hub === null ? -1 : index.get(hub);
   // How close a line comes to a node it doesn't join, as a share of the layout's size
   const worst = (x, y) => {
     const span = Math.max(Math.max(...x) - Math.min(...x), Math.max(...y) - Math.min(...y)) || 1;
@@ -967,15 +963,14 @@ function layoutGraph(nodes, links, { hub = null, pulls = [], won = null, wonLink
     }
     return out;
   };
-  // One try, from a spiral turned by `turn`: the most linked first (nearest the middle), the Won node's
-  // cards to the right; cards held to the hub start bunched on its left, so lines between them don't
+  // One try, from a spiral turned by `turn`: the most linked first (nearest the middle); cards held to the hub start bunched on its left, so lines between them don't
   // enclose it
   const attempt = turn => {
     const x = new Float64Array(m), y = new Float64Array(m);
     const loose = free.filter(i => !held.has(i)), bunch = free.filter(i => held.has(i));
     loose.forEach((i, j) => {
       const r = (hub === null ? 0.05 : 0.2) + 0.35 * Math.sqrt((j + 1) / loose.length), a = turn + j * 2.39996;
-      [x[i], y[i]] = [r * Math.cos(a) + (toWon.has(i) ? 0.15 : 0), r * Math.sin(a)];
+      [x[i], y[i]] = [r * Math.cos(a), r * Math.sin(a)];
     });
     bunch.forEach((i, j) => {
       const a = Math.PI + turn / 4 + (j - (bunch.length - 1) / 2) * 0.7;
@@ -983,7 +978,6 @@ function layoutGraph(nodes, links, { hub = null, pulls = [], won = null, wonLink
     });
     for (let step = 0; step < STEPS; step++) {
       const heat = 0.05 * (1 - step / STEPS) + 0.002;
-      if (w >= 0) [x[w], y[w]] = [Math.max(...free.map(i => x[i])) + 0.3, 0];
       const dx = new Float64Array(m), dy = new Float64Array(m);
       const push = (i, fx, fy) => { dx[i] += fx; dy[i] += fy; };
       for (let i = 0; i < m; i++) for (let j = i + 1; j < m; j++) { // apart
@@ -1029,7 +1023,6 @@ function layoutGraph(nodes, links, { hub = null, pulls = [], won = null, wonLink
         y[i] += dy[i] * cap;
       }
     }
-    if (w >= 0) [x[w], y[w]] = [Math.max(...free.map(i => x[i])) + 0.3, free.length ? free.reduce((s, i) => s + y[i], 0) / free.length : 0];
     // Then made to hold, not just leaned toward: a node a line runs under moved off it (or the line moved,
     // when the node is kept in place), nodes too close moved apart, until nothing's left to move
     const hold = rounds => {
@@ -1058,7 +1051,6 @@ function layoutGraph(nodes, links, { hub = null, pulls = [], won = null, wonLink
           }
         }
       }
-      if (w >= 0) x[w] = Math.max(x[w], Math.max(...free.map(i => x[i])) + 0.2);
       if (!moved) break;
     }
     };
@@ -1121,10 +1113,10 @@ const clearResult = r => r.evidence !== null && Math.abs(r.evidence) >= 2
 // shard.decks; running: playing all its cards), the n most run; every line the phi between decks running
 // two packages, among members: positive ones that stand out (PACKAGE_LINK and STAND_OUT above the typical
 // pair's, each package's TOGETHER_LINKS strongest at most), negative ones of PACKAGE_APART or less (an
-// either/or: two builds), the clearest few a package. With tournament decks (lists, window w), a Won node
-// to the right linked to the packages whose decks clearly win more or less. have (a Set of card numbers,
+// either/or: two builds), the clearest few a package. With tournament decks (lists, window w), won: the
+// packages whose decks clearly win more or less, the lift on their nodes. have (a Set of card numbers,
 // a pasted deck's): how much of each package it has. Laid out as synergyGraph does, with no card in the
-// middle. nodes: [{key: "p<index in packages>" | "won", kind: "package" | "won", x, y, cards, decks
+// middle. nodes: [{key: "p<index in packages>", kind: "package", x, y, cards, decks
 // (members running it), name: its two strongest cards, lift?, tested?, have?}]; edges: [{a, b, strength}]; won: [{key,
 // lift, tested: [tournament decks with it, with none of it]}]
 export const MAP_PACKAGES = 12, PACKAGE_LINK = 0.15, PACKAGE_APART = -0.1;
@@ -1153,12 +1145,10 @@ export function packageMap(shard, packages, members, { lists = null, w = 0, have
   }) : [];
 
   const lift = new Map(won.map(x => [x.key, x.lift])), tested = new Map(won.map(x => [x.key, x.tested]));
-  const at = shown.length ? layoutGraph([...shown, ...(won.length ? [{ key: "won" }] : [])], edges,
-    { won: won.length ? "won" : null, wonLinks: won.map(x => x.key), aspect, ...(keep && { degrees }) }) : new Map();
+  const at = shown.length ? layoutGraph(shown, edges, { aspect, ...(keep && { degrees }) }) : new Map();
   const nodes = shown.map(({ key, cards, runs }) => ({ key, kind: "package", x: at.get(key)[0], y: at.get(key)[1],
     cards, decks: runs.length, name: cards.slice(0, 2), ...(lift.has(key) && { lift: lift.get(key), tested: tested.get(key) }),
     ...(have && { have: hasOf(have, cards) }), ...(have && hasOf(have, cards) === "some" && { held: cards.filter(c => have.has(c)).length }) }));
-  if (won.length) nodes.push({ key: "won", kind: "won", x: at.get("won")[0], y: at.get("won")[1] });
   return { nodes, edges, won };
 }
 
@@ -1198,10 +1188,10 @@ function linkPackages(items, all, typical = null) {
 // and Win rate views, the line shows how the package does); further out the `extra` cards decks running it
 // add most, each linked to the package: whose phi with running it is
 // PARTNER_PHI or more, played more by the decks running it than by the others. With tournament decks
-// (lists, window w), a Won node to the right linked to the package, if its decks clearly win more or less
-// than those with none of it, and to the extra cards its tournament decks clearly win more or less with
-// (as winsMoreWith, `min` decks a side). have (a Set of card numbers): which cards a pasted deck has.
-// nodes: [{key: "pkg" | "c<card>" | "won", kind: "package" | "core" | "extra" | "won", x, y, ...}]: the
+// (lists, window w), won: the package, if its decks clearly win more or less than those with none of it,
+// and the extra cards its tournament decks clearly win more or less with (as winsMoreWith, `min` decks a
+// side), the lift on their nodes. have (a Set of card numbers): which cards a pasted deck has.
+// nodes: [{key: "pkg" | "c<card>", kind: "package" | "core" | "extra", x, y, ...}]: the
 // package {cards, decks (members running it), name}; core {card, decks (members playing it)}; extra
 // {card, base (share of the other members playing it), with (share of those running the package),
 // decksWith, phi}; lift?, tested? and have? (card nodes) on each. edges: [{a, b, strength}]; won: [{key, lift,
@@ -1242,14 +1232,12 @@ export function packageGraph(shard, cards, members, { lists = null, w = 0, have 
 
   // Its cards held close around the middle (every deck running it plays them all: no line to them), the
   // extra cards further out
-  const at = layoutGraph([{ key: "pkg" }, ...cards.map(c => ({ key: key(c) })), ...extras.map(x => ({ key: key(x.card) })),
-    ...(won.length ? [{ key: "won" }] : [])], edges,
-  { hub: "pkg", pulls: cards.map(c => ({ key: key(c), length: 0.17 })), won: won.length ? "won" : null, wonLinks: won.map(x => x.key), aspect });
+  const at = layoutGraph([{ key: "pkg" }, ...cards.map(c => ({ key: key(c) })), ...extras.map(x => ({ key: key(x.card) }))], edges,
+    { hub: "pkg", pulls: cards.map(c => ({ key: key(c), length: 0.17 })), aspect });
   const place = k => ({ x: at.get(k)[0], y: at.get(k)[1] });
   const nodes = [{ key: "pkg", kind: "package", ...place("pkg"), cards: all0, decks: k, name: all0.slice(0, 2), ...(lift.has("pkg") && { lift: lift.get("pkg"), tested: tested.get("pkg") }) },
     ...cards.map((c, i) => ({ key: key(c), kind: "core", ...place(key(c)), card: c, decks: plays(ps[i]), ...marks(c, key(c)) })),
     ...extras.map(x => ({ key: key(x.card), kind: "extra", ...place(key(x.card)), ...x, ...marks(x.card, key(x.card)) }))];
-  if (won.length) nodes.push({ key: "won", kind: "won", ...place("won") });
   return { nodes, edges, won };
 }
 
