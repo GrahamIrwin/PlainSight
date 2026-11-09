@@ -1,4 +1,4 @@
-# MTG Vec2Search
+# PlainSight
 
 Search Magic: The Gathering cards by describing them in plain English
 ("cheap green elves that ramp"), with filters for color identity, card type,
@@ -16,7 +16,8 @@ or pick the rail anywhere, to scroll. The die doesn't tumble for anyone who'd ra
 search only downloads the small pieces of the index it needs (~200 KB the first
 time, a few KB after that).
 
-**Live site:** https://grahamirwin.github.io/MTG_Vec2Search/
+**Live site:** https://grahamirwin.github.io/MTG_Vec2Search/ (the repo keeps its first name, MTG Vec2Search,
+after the vector space search behind the card search)
 
 ![Searching “cheap green elves that ramp”: the terms it matched, and Llanowar Elves, Elvish Mystic and other cheap green mana elves, each a 100% match](docs/images/screenshot-search.webp)
 
@@ -686,7 +687,7 @@ and `node --test` (Node 24).
 
 Card data and images come from [Scryfall](https://scryfall.com), decklists from
 [Archidekt](https://archidekt.com) and [Moxfield](https://moxfield.com), tournament data provided by
-[TopDeck.gg](https://topdeck.gg) (its first two years through [edhtop16](https://edhtop16.com)). MTG Vec2Search is
+[TopDeck.gg](https://topdeck.gg) (its first two years through [edhtop16](https://edhtop16.com)). PlainSight is
 unofficial Fan Content permitted under the Fan Content Policy. Not
 approved/endorsed by Wizards. Portions of the materials used are property of
 Wizards of the Coast. ©Wizards of the Coast LLC.

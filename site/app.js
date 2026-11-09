@@ -1831,7 +1831,7 @@ async function showCommander(key) {
     return commanderMessage("There aren't enough decks with that commander yet. Here are the commanders that have some.");
   }
   const lead = commanderNames(key, names);
-  document.title = `${lead} · MTG Vec2Search`;
+  document.title = `${lead} · PlainSight`;
   const leaders = key.split("-").map(Number);
   const [shard, infos, released] = await Promise.all([getJson(`decks/${key}.json`).then(decodeShard),
     Promise.all(leaders.map(cardInfo)), getReleased()]);
@@ -2876,7 +2876,7 @@ async function showPilot(id) {
     getJson("decks/results/ranking.json").catch(() => null)]);
   if (!block[id]) return tournamentsMessage("There's no such pilot in these tournament results.");
   const [name, rows, liked = []] = block[id];
-  document.title = `${name || "Unknown pilot"} · MTG Vec2Search`;
+  document.title = `${name || "Unknown pilot"} · PlainSight`;
   $("pilot-name").textContent = name || "Unknown pilot";
 
   // Their record, against every deck's over the same two years
@@ -4052,7 +4052,7 @@ async function showCardPage(card) {
   if (!Number.isInteger(card) || card < 0 || card >= index.n) return commanderMessage("There's no such card.");
   const [info, pairs] = await Promise.all([cardInfo(card),
     getJson(`decks/card-commanders/${Math.floor(card / CARD_BLOCK)}.json`).then(rows => rows[card % CARD_BLOCK] ?? [])]);
-  document.title = `${info.name} · MTG Vec2Search`;
+  document.title = `${info.name} · PlainSight`;
   $("card-art").replaceChildren(el("button", { type: "button", className: "card", onclick: () => openCard(info.id, card) },
     el("img", { src: imageUrl(info.id), alt: info.name })));
   $("card-name").textContent = info.name;
