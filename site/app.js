@@ -2419,11 +2419,18 @@ function gapTile(gap, spread, sure, who) {
   const tile = statTile("Difference", el("span", { className: sure ? "" : "unsure", textContent: points(gap) }), sure
     ? `Clearly ${dir(gap)} with ${who}: somewhere from ${ptsText(gap > 0 ? lo : hi)} to ${ptsText(gap > 0 ? hi : lo)} ${dir(gap)}`
     : `Too few games to be sure: somewhere from ${ptsText(lo)} ${dir(lo)} to ${ptsText(hi)} ${dir(hi)}`, tone);
-  // the bar: 0 in the middle, the range, the gap as a dot
-  const most = 1.15 * Math.max(Math.abs(lo), Math.abs(hi), 0.02), at = x => `${50 + 50 * x / most}%`;
+  // The bar: an axis, lower to the left of 0 and higher to the right; the range on it, the gap a dot in it,
+  // and the range's ends under it (one label for both when they're too close to tell apart)
+  const most = 1.1 * Math.max(Math.abs(lo), Math.abs(hi), 0.02), at = x => 50 + 50 * x / most;
+  const pts = x => `${x > 0 ? "▲" : x < 0 ? "▼" : ""}${Math.abs(x * 100).toFixed(1)}`;
+  const end = (x, text) => el("span", { className: `end${at(x) < 12 ? " start" : at(x) > 88 ? " stop" : ""}`, style: `left:${at(x)}%`, textContent: text });
   tile.append(el("span", { className: `gap-range ${tone}`, ariaHidden: "true" },
-    el("span", { className: "zero" }), el("span", { className: "range", style: `left:${at(lo)};right:calc(100% - ${at(hi)})` }),
-    el("span", { className: "dot", style: `left:${at(gap)}` })));
+    el("span", { className: "axis" }, el("span", { textContent: "lower" }), el("span", { textContent: "0" }), el("span", { textContent: "higher" })),
+    el("span", { className: "track" }, el("span", { className: "zero" }),
+      el("span", { className: "range", style: `left:${at(lo)}%;right:${100 - at(hi)}%` }),
+      el("span", { className: "dot", style: `left:${at(gap)}%` })),
+    el("span", { className: "ends" }, ...(at(hi) - at(lo) < 26 ? [end(gap, `${pts(lo)} to ${pts(hi)} pts`)]
+      : [end(lo, pts(lo)), end(hi, pts(hi))]))));
   return tile;
 }
 function packageView(data, cards, w, lead, periodText) {
