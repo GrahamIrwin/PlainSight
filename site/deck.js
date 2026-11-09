@@ -1194,8 +1194,8 @@ function linkPackages(items, all, typical = null) {
 }
 
 // A package's graph, among members (numbers in shard.decks): the package (cards: card numbers) in the
-// middle; its cards close around it, the pairs of them that stand out linked by their phi (as synergyGraph's
-// partners: each card's strongest few, and either/ors, negative); further out the `extra` cards decks running it add most: whose phi with running it is
+// middle; its cards close around it, each linked to it (kind "member", every graph alike); further out the
+// `extra` cards decks running it add most: whose phi with running it is
 // PARTNER_PHI or more, played more by the decks running it than by the others. With tournament decks
 // (lists, window w), a Won node to the right linked to the package, if its decks clearly win more or less
 // than those with none of it, and to the extra cards its tournament decks clearly win more or less with
@@ -1203,7 +1203,7 @@ function linkPackages(items, all, typical = null) {
 // nodes: [{key: "pkg" | "c<card>" | "won", kind: "package" | "core" | "extra" | "won", x, y, ...}]: the
 // package {cards, decks (members running it), name}; core {card, decks (members playing it)}; extra
 // {card, base (share of the other members playing it), with (share of those running the package),
-// decksWith, phi}; lift?, tested? and have? (card nodes) on each. edges: [{a, b, strength}]; won: [{key, lift,
+// decksWith, phi}; lift?, tested? and have? (card nodes) on each. edges: [{a, b, strength, kind?}]; won: [{key, lift,
 // tested: [tournament decks with it, without it (the package's: with none of it)]}]
 export const PACKAGE_EXTRAS = 6;
 export function packageGraph(shard, cards, members, { lists = null, w = 0, have = null, extra = PACKAGE_EXTRAS, min = MIN_PAIR_DECKS, mine = false, aspect = 1 } = {}) {
@@ -1217,30 +1217,7 @@ export function packageGraph(shard, cards, members, { lists = null, w = 0, have 
   shard.sets ??= shard.decks.map(d => new Set(d.cards));
   const plays = p => (p === undefined ? 0 : counts[p]);
   const key = card => `c${card}`;
-  // Its cards' pairs: the ones that stand out from its other pairs (each card's TOGETHER_LINKS strongest),
-  // and either/ors; every pair drawn crowds the middle with lines that say little (decks running it play all)
-  const pairs = [];
-  for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
-    const ab = ps[i] === undefined || ps[j] === undefined ? 0 : members.reduce((n, d) => n + (shard.sets[d].has(ps[i]) && shard.sets[d].has(ps[j])), 0);
-    pairs.push([phiOf(ab, plays(ps[i]), plays(ps[j]), all), i, j, ab]);
-  }
-  const typical = pairs.length >= 3 ? [...pairs].sort((p, q) => p[0] - q[0])[pairs.length >> 1][0] : 0;
-  pairs.sort((p, q) => q[0] - p[0] || p[1] - q[1] || p[2] - q[2]);
-  const edges = [], links = new Array(ps.length).fill(0), aparts = new Array(ps.length).fill(0);
-  for (const [s, i, j, ab] of pairs) {
-    if (s >= Math.max(LINK, typical + STAND_OUT) && ab >= MIN_WITH && (links[i] < TOGETHER_LINKS || links[j] < TOGETHER_LINKS)) {
-      links[i]++;
-      links[j]++;
-      edges.push({ a: key(cards[i]), b: key(cards[j]), strength: s });
-    }
-  }
-  for (const [s, i, j] of pairs.reverse()) {
-    if (s <= APART && aparts[i] < TOGETHER_LINKS && aparts[j] < TOGETHER_LINKS) {
-      aparts[i]++;
-      aparts[j]++;
-      edges.push({ a: key(cards[i]), b: key(cards[j]), strength: s });
-    }
-  }
+  const edges = [];
   const core = new Set(all0.map(c => shard.position.get(c)));
   const extras = k < MIN_PLAYING ? [] : [...counts.keys()].flatMap(q => {
     if (core.has(q) || withIt[q] < MIN_WITH) return [];
@@ -1263,6 +1240,8 @@ export function packageGraph(shard, cards, members, { lists = null, w = 0, have 
     ...(won.length ? [{ key: "won" }] : [])], edges,
   { hub: "pkg", pulls: cards.map(c => ({ key: key(c), length: 0.17 })), won: won.length ? "won" : null, wonLinks: won.map(x => x.key), aspect });
   const place = k => ({ x: at.get(k)[0], y: at.get(k)[1] });
+  // Its cards' lines, after the layout (the pulls hold them close)
+  edges.unshift(...cards.map(c => ({ a: "pkg", b: key(c), strength: 1, kind: "member" })));
   const nodes = [{ key: "pkg", kind: "package", ...place("pkg"), cards: all0, decks: k, name: all0.slice(0, 2), ...(lift.has("pkg") && { lift: lift.get("pkg"), tested: tested.get("pkg") }) },
     ...cards.map((c, i) => ({ key: key(c), kind: "core", ...place(key(c)), card: c, decks: plays(ps[i]), ...marks(c, key(c)) })),
     ...extras.map(x => ({ key: key(x.card), kind: "extra", ...place(key(x.card)), ...x, ...marks(x.card, key(x.card)) }))];

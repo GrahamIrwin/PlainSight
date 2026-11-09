@@ -261,14 +261,14 @@ after the vector space search behind the card search)
    packages, ranked and coloured like the synergy graph's, dotted for either/or packages (different
    builds), and with tournament results a Won node joined to the packages whose decks clearly win
    more (green) or less (red) than those with none of it. Picking a package swaps in its own graph
-   (`packageGraph`, "All packages › Displacer Kitten + Teferi" to go back): its cards around it,
-   linked by how strongly they pair, and around them the cards decks running it add most (played far
+   (`packageGraph`, "All packages › Displacer Kitten + Teferi" to go back): its cards close around it,
+   each joined to it by a brass line (every package's and combo's graph alike), and further out the cards decks running it add most (played far
    more by them than by the other decks; 4 on a phone), each tied to the Won node if decks with the
    package and it win clearly more or less than those with the package alone. Picking a card opens it.
 
    ![Derevi's package map: packages as nodes, each showing half of its two cards' art, linked when the same decks run them, the most linked in the middle; Bloom Tender + Faeburrow Elder pointed at, its name shown and 41% of these decks run all of them (1,323 decks)](docs/images/screenshot-packages.webp)
 
-   ![The Bloom Tender + Faeburrow Elder package's graph: the package in the middle, its two cards beside it, and around them the cards decks running it add most, such as Emiel the Blessed, Delney and Noble Hierarch](docs/images/screenshot-package.webp)
+   ![The Bloom Tender + Faeburrow Elder package's graph: the package in the middle, its two cards joined to it by brass lines, and around them the cards decks running it add most, such as Emiel the Blessed, Delney and Noble Hierarch](docs/images/screenshot-package.webp)
 
    Its **combos** show the same two ways (Graph | List): the graph is the package map for combos, one
    node per combo in 1% of the decks or more (the most played of each group of combos that differ in one

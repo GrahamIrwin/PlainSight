@@ -557,10 +557,10 @@ test("package graph: its cards in the middle, what decks running it add around t
   const { base, with: share, decksWith } = byKey.get("c21");
   assert.deepEqual({ base, share, decksWith }, { base: 0, share: 70 / 80, decksWith: 70 });
   assert.deepEqual(packageGraph(shard, [10, 11], all, { extra: 1 }).nodes.filter(n => n.kind === "extra").map(n => n.card), [21]);
-  // Lines: the core pair, and a spoke to each extra (none to the core: its decks all play it)
-  assert.equal(edgeOf(graph, "c10", "c11").strength, 1);
-  assert.ok(extras.every(n => edgeOf(graph, "pkg", n.key).strength >= 0.2));
-  assert.equal(graph.edges.length, 1 + extras.length);
+  // Lines: one to each of its cards (members, every graph alike), and a spoke to each extra
+  assert.ok(["c10", "c11"].every(k => edgeOf(graph, "pkg", k).kind === "member"));
+  assert.ok(extras.every(n => edgeOf(graph, "pkg", n.key).strength >= 0.2 && !edgeOf(graph, "pkg", n.key).kind));
+  assert.equal(graph.edges.length, 2 + extras.length);
   // Won: the package (its decks win more than those without it) and 21 (its decks with 21 win more); not 12
   assert.deepEqual(graph.won.map(x => x.key).sort(), ["c21", "pkg"]);
   assert.ok(center.lift > 0 && byKey.get("c21").lift > 0 && !("lift" in byKey.get("c12")));
@@ -578,11 +578,10 @@ test("package graph: its cards in the middle, what decks running it add around t
   const mine = packageGraph(shard, [10, 11], all, { have: new Set([10, 21]) });
   assert.deepEqual(mine.nodes.filter(n => n.card).map(n => [n.card, n.have]).sort((a, b) => a[0] - b[0]),
     [[10, true], [11, false], [12, false], [13, false], [21, true]]);
-  // Three cards: every pair linked; an either/or pair is negative
+  // Three cards: each linked to the package, none to each other
   const three = packageGraph(shard, [10, 11, 14], all);
   assert.equal(three.nodes[0].decks, 0);
-  assert.ok(edgeOf(three, "c10", "c14").strength < 0);
-  assert.equal(three.edges.length, 3); // run by no deck: no extras
+  assert.deepEqual(three.edges.map(e => [e.a, e.b, e.kind]), [["pkg", "c10", "member"], ["pkg", "c11", "member"], ["pkg", "c14", "member"]]); // run by no deck: no extras
   for (const g of [graph, mine, three, packageGraph(shard, [10, 11, 21], all), packageGraph(shard, [10, 11], all, { lists: pkgLists, w: 0, extra: 12 })]) spread(g);
   assert.equal(packageGraph(shard, [10, 999], all).nodes[0].decks, 0);
   // On a pasted deck's page, just the cards it plays: here one of the package's two, and an extra it has
