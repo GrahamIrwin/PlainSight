@@ -14,3 +14,4 @@ jobs:
       - run: python3 .github/changelog.py
         env:
           DISCORD_CHANGELOG: ${{ secrets.DISCORD_CHANGELOG }}
+          DISCORD_ROLE: "1569456599121272977"  # the "PlainSight updates" role, pinged by each post

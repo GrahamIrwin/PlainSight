@@ -1,7 +1,7 @@
 """Posts a push's changes to PlainSight's Discord channel (#plainsight-updates): each commit that
 touched the site, the scripts or the worker, by its title. Docs, tests and workflows aren't posted.
 Run by .github/workflows/changelog.yml on a push to main, with the channel's webhook in the
-DISCORD_CHANGELOG secret."""
+DISCORD_CHANGELOG secret; DISCORD_ROLE, if set, is the role it pings (the one members pick for updates)."""
 import json
 import os
 import urllib.request
@@ -16,23 +16,24 @@ def changes(event):
             and any(f.startswith(CODE) for k in ("added", "modified", "removed") for f in c.get(k, []))]
 
 
-def message(event):
+def message(event, role=None):
     commits = changes(event)
     if not commits:
         return None
     text = "\n".join("• " + c["message"].split("\n", 1)[0].strip() for c in commits)
     if len(text) > 3800:  # Discord takes 4,096 characters
         text = text[:3800].rsplit("\n", 1)[0] + "\n…"
-    return {"embeds": [{"title": "PlainSight update", "url": SITE, "color": 0xA8834A,
+    return {"content": f"<@&{role}>" if role else "",
+            "embeds": [{"title": "PlainSight update", "url": SITE, "color": 0xA8834A,
                         "description": f"{text}\n\n[The changes in the code]({event['compare']})",
                         "timestamp": commits[-1]["timestamp"]}],
-            "allowed_mentions": {"parse": []}}
+            "allowed_mentions": {"parse": [], "roles": [role] if role else []}}
 
 
 if __name__ == "__main__":
     hook = os.environ.get("DISCORD_CHANGELOG")
     with open(os.environ["GITHUB_EVENT_PATH"], encoding="utf-8") as f:
-        body = message(json.load(f))
+        body = message(json.load(f), os.environ.get("DISCORD_ROLE"))
     if not hook or not body:
         print("Nothing to post" if hook else "No DISCORD_CHANGELOG secret: nothing posted")
     else:
