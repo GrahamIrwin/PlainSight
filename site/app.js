@@ -1631,6 +1631,9 @@ let packagesAs = null; // a commander's packages as a "graph" or a "list" (null:
 let combosAs = null; // the same for its combos
 let deckPackagesAs = "packages"; // the deck page's packages graph: of "packages" or "combos"
 const commanderLink = key => "?" + new URLSearchParams({ commander: key });
+// From tournament results (the Tournaments page, a pilot's): the commander's page on its Tournaments tab,
+// its cEDH decks (bracket 5) picked
+const tournamentLink = key => `${commanderLink(key)}&view=tournaments&bracket=5`;
 
 // Changes some of the URL's parameters (null: leaves it out), so a view is a link to share
 // A page's sections, one at a time: `views` ([[name, label]]) as buttons in `box`, and in `root`
@@ -2808,7 +2811,7 @@ async function showTournaments() {
     const infos = await Promise.all(page.map(r => Promise.all(r.key.split("-").map(c => cardInfo(+c)))));
     if (current.rows !== rows) return;
     $("tour-rows").replaceChildren(...page.map((r, i) => {
-      const href = files.has(r.key) ? commanderLink(r.key) : "https://edhtop16.com/commander/"
+      const href = files.has(r.key) ? tournamentLink(r.key) : "https://edhtop16.com/commander/"
         + encodeURIComponent(r.key.split("-").map(c => names[c]).sort().join(" / "));
       return el("tr", {},
         el("td", { className: "rank", textContent: i + 1 }),
@@ -2860,7 +2863,7 @@ async function showTournaments() {
 
   // Highlights: the last month's standout commanders (see highlights() in build_decks.py)
   const h = all.highlights;
-  const leadOf = key => (files.has(key) ? el("a", { href: commanderLink(key), textContent: commanderNames(key, names) }) : commanderNames(key, names));
+  const leadOf = key => (files.has(key) ? el("a", { href: tournamentLink(key), textContent: commanderNames(key, names) }) : commanderNames(key, names));
   const whoPlayed = ([, decks, , pilots]) => `${decks} decks` + (pilots ? ` by ${pilots} ${pilots === 1 ? "pilot" : "pilots"}` : "");
   const tiles = h ? [
     h.best && statTile("Best results", leadOf(h.best[0]), `${h.best[2].toFixed(2)} points a game (all decks: ${h.field.toFixed(2)}), ${whoPlayed(h.best)}`),
@@ -2886,7 +2889,7 @@ async function showTournaments() {
     return { id, name, decks, played, lower: name.toLowerCase() };
   })).catch(err => { pilotIndex = null; throw err; }));
   const decksOf = n => `${n.toLocaleString()} ${n === 1 ? "deck" : "decks"}`;
-  const leadLink = key => (files.has(key) ? el("a", { href: commanderLink(key), textContent: commanderNames(key, names) }) : commanderNames(key, names));
+  const leadLink = key => (files.has(key) ? el("a", { href: tournamentLink(key), textContent: commanderNames(key, names) }) : commanderNames(key, names));
   async function searchPilots() {
     const typed = $("pilot-input").value.trim(), q = typed.toLowerCase();
     $("pilot-note").textContent = "";
@@ -2971,7 +2974,7 @@ async function showPilot(id) {
 
   // Commanders: what they played, most decks first, each with how they did on it
   const leadName = (key, lead) => (key ? commanderNames(key, names) : lead) || "Unknown commander";
-  const leadLink = (key, lead) => (files.has(key) ? el("a", { href: commanderLink(key), textContent: leadName(key, lead) }) : leadName(key, lead));
+  const leadLink = (key, lead) => (files.has(key) ? el("a", { href: tournamentLink(key), textContent: leadName(key, lead) }) : leadName(key, lead));
   const byCommander = new Map();
   for (const [, , , , , won, lost, drew, key, lead] of rows) {
     const c = byCommander.get(key || lead) ?? { key, lead, decks: 0, games: 0, wins: 0 };
@@ -2979,7 +2982,7 @@ async function showPilot(id) {
   }
   const theirs = [...byCommander.values()].sort((a, b) => b.decks - a.decks || b.wins - a.wins);
   $("pilot-commanders").replaceChildren(el("span", { className: "label", textContent: "Plays" }), ...theirs.map(c =>
-    el(files.has(c.key) ? "a" : "span", { className: "term", ...(files.has(c.key) ? { href: commanderLink(c.key) } : {}),
+    el(files.has(c.key) ? "a" : "span", { className: "term", ...(files.has(c.key) ? { href: tournamentLink(c.key) } : {}),
       title: `${c.decks} ${c.decks === 1 ? "deck" : "decks"}, ${c.wins} wins in ${c.games} games` },
     leadName(c.key, c.lead), el("small", { textContent: `${c.decks} ${c.decks === 1 ? "deck" : "decks"} · ${c.games ? percent(c.wins / c.games) : "–"} win rate` }))));
 

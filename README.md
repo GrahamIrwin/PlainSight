@@ -415,7 +415,9 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
      Tournaments tabs fetch `trends.json` only once their filters are used.
 6. **Tournaments** (`?tournaments`) ranks every commander with tournament
    decks by decks, points per game, share of games won or share of decks making the top cut,
-   each against every deck's, over the last 3, 6, 12 or 24 months. Its cards are
+   each against every deck's, over the last 3, 6, 12 or 24 months. A commander picked here (or on a
+   pilot's page) opens on its page's Tournaments tab with its cEDH decks (bracket 5) picked
+   (`tournamentLink`). Its cards are
    compared across commanders without letting commanders count: `pooled()` in
    `build_decks.py` takes, for each commander with 3 or more decks with a card
    and without it, the difference in games won between them, and averages
