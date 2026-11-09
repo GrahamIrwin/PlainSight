@@ -19,8 +19,8 @@ time, a few KB after that).
 **Live site:** https://grahamirwin.github.io/MTG_Vec2Search/ (the repo keeps its first name, MTG Vec2Search,
 after the vector space search behind the card search)
 
-The site's own address is a landing page of its own (no header or search): the name over a Plains's
-art, a line on what the site is, and a tile for each part (Find cards at `?search`, Deck recommendations, Commanders, Trends, Prices and Tournaments),
+The site's own address is a landing page of its own (no header or search): the name, a line on what
+the site is, and a tile for each part (Find cards at `?search`, Deck recommendations, Commanders, Trends, Prices and Tournaments),
 each with a card's art (hard-coded Scryfall art crops, so the page needs no data of its own).
 
 ![Searching “cheap green elves that ramp”: the terms it matched, and Llanowar Elves, Elvish Mystic and other cheap green mana elves, each a 100% match](docs/images/screenshot-search.webp)

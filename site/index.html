@@ -234,15 +234,10 @@
     .landing { max-width: 1040px; margin: 0 auto; padding-top: 56px; }
     /* Its own page: no masthead, search or currency */
     .landing-page :is(.masthead, #search, #currency, .skip) { display: none; }
-    .land-hero { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--rule);
-      min-height: 380px; display: grid; place-items: center; text-align: center; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .7); }
-    .land-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
-    .land-hero::after { content: ""; position: absolute; inset: 0;
-      background: radial-gradient(ellipse at center, rgb(16 11 8 / .35), rgb(16 11 8 / .78)); }
-    .land-hero-text { position: relative; z-index: 1; padding: 48px 28px; color: #f4ead8; }
-    .land-hero h1 { font-size: clamp(48px, 9vw, 92px); line-height: 1; letter-spacing: .01em; color: #f8efdf; text-shadow: 0 3px 24px rgb(0 0 0 / .6); }
-    .land-tagline { margin: 14px 0 0; font-variant-caps: all-small-caps; letter-spacing: .2em; font-size: 19px; color: #e2cfa6; }
-    .land-lede { max-width: 600px; margin: 20px auto 0; font-size: 18.5px; line-height: 1.55; color: #eadfcb; text-shadow: 0 1px 10px rgb(0 0 0 / .6); }
+    .land-hero { text-align: center; padding: 30px 0 8px; }
+    .land-hero h1 { font-size: clamp(52px, 10vw, 104px); line-height: 1; letter-spacing: .01em; color: var(--ink); }
+    .land-tagline { margin-top: 16px; font-size: 19px; letter-spacing: .2em; }
+    .land-lede { max-width: 600px; margin: 22px auto 0; font-size: 19px; line-height: 1.55; color: var(--ink-soft); }
     .land-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 40px; }
     .land-tile {
       display: flex; flex-direction: column; overflow: hidden; color: inherit; text-decoration: none;
@@ -261,8 +256,7 @@
     /* A phone: each tile a row, its art beside its name */
     @media (max-width: 560px) {
       .landing { padding-top: 48px; }
-      .land-hero { min-height: 300px; border-radius: 16px; }
-      .land-hero-text { padding: 36px 18px; }
+      .land-hero { padding-top: 16px; }
       .land-tagline { font-size: 15px; letter-spacing: .12em; }
       .land-tiles { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
       .land-lede { font-size: 16px; }
@@ -844,7 +838,7 @@
     }
     .ornament::before, .ornament::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--rule)); }
     .ornament::after { transform: scaleX(-1); }
-    .credits { display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px 36px; }
+    .credits { display: grid; grid-template-columns: repeat(5, 1fr); gap: 28px 32px; }
     .credits h2 { font: 16px/1.2 "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; color: var(--brass); margin-bottom: 6px; }
     .credits p { margin: 0; }
     .fine-print {
@@ -852,7 +846,8 @@
       text-align: center; font-size: 13px; line-height: 1.6; color: var(--ink-faint);
     }
     .fine-print a { color: inherit; }
-    @media (max-width: 900px) { .credits { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 900px) { .credits { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 700px) { .credits { grid-template-columns: repeat(2, 1fr); } }
     @media (max-width: 520px) { .credits { grid-template-columns: 1fr; gap: 20px; } .colophon { margin-top: 56px; } }
 
     @media (prefers-reduced-motion: reduce) {
@@ -958,14 +953,13 @@
         </details>
       </form>
 
-      <!-- The landing page (no address but the site's): a page of its own, no header or search; its name
-           over a Plains, a line on what it is, and a way into each part -->
+      <!-- The landing page (no address but the site's): a page of its own, no header or search; its name,
+           a line on what it is, and a way into each part -->
       <div class="landing" id="landing" hidden>
         <header class="land-hero">
-          <img class="land-hero-art" src="https://cards.scryfall.io/art_crop/front/0/9/09ac862f-0a51-44dd-b86f-9412b8218b13.jpg" alt="">
           <div class="land-hero-text">
             <h1>PlainSight</h1>
-            <p class="land-tagline">A plain-English card catalogue</p>
+            <p class="tagline land-tagline">A plain-English card catalogue</p>
             <p class="land-lede">Search every Magic card in plain English, and see what Commander decks really
               play, from public decklists and cEDH tournament results.</p>
           </div>
@@ -1792,22 +1786,26 @@
         </section>
         <section>
           <h2 class="label">What cards do</h2>
-          <p>Function tags from the community <a href="https://tagger.scryfall.com">Scryfall Tagger</a> project.
-            Deck recommendations from public decklists on <a href="https://moxfield.com">Moxfield</a> and <a href="https://archidekt.com">Archidekt</a>,
-            and deck links from both. Tournament data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.</p>
+          <p>Function tags from the community <a href="https://tagger.scryfall.com">Scryfall Tagger</a> project.</p>
+        </section>
+        <section>
+          <h2 class="label">Decklists</h2>
+          <p>Deck recommendations from public decklists on <a href="https://moxfield.com">Moxfield</a> and
+            <a href="https://archidekt.com">Archidekt</a>, and deck links from both.</p>
+        </section>
+        <section>
+          <h2 class="label">Tournaments</h2>
+          <p>Tournament data provided by <a href="https://topdeck.gg" target="_blank" rel="noopener">TopDeck.gg</a>.</p>
         </section>
         <section>
           <h2 class="label">Prices</h2>
           <p>Scryfall's US prices (on tiles, each card's cheapest printing), converted with
             <a href="https://frankfurter.dev">Frankfurter</a> at European Central Bank rates.</p>
         </section>
-        <section>
-          <h2 class="label">This site</h2>
-          <p>Free, with nothing to install. The source is on
-            <a href="https://github.com/GrahamIrwin/MTG_Vec2Search">GitHub</a>.</p>
-        </section>
       </div>
-      <p class="fine-print">PlainSight is unofficial Fan Content permitted under the
+      <p class="fine-print">PlainSight is free, with nothing to install. The source is on
+        <a href="https://github.com/GrahamIrwin/MTG_Vec2Search">GitHub</a>.<br>
+        PlainSight is unofficial Fan Content permitted under the
         <a href="https://company.wizards.com/en/legal/fancontentpolicy">Fan Content Policy</a>.
         Not approved/endorsed by Wizards. Portions of the materials used are property of
         Wizards of the Coast. ©Wizards of the Coast LLC.</p>
