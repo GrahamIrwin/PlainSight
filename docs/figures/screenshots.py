@@ -52,6 +52,13 @@ with sync_playwright() as p:
     context.add_init_script("try { localStorage.setItem('currency', 'USD'); localStorage.removeItem('decklist') } catch {}")
     page = context.new_page()
 
+    # 0. The landing page: its name, the line on the site, and the tiles into each part
+    page.goto(f"{SITE}/")
+    page.wait_for_selector(".land-tile img")
+    settle(page)
+    tiles = at(page.locator(".land-tiles"))
+    save(page, "screenshot-landing", {"x": 0, "y": 0, "width": WIDTH, "height": tiles["y"] + tiles["height"] + 28})
+
     # 1. Search: the query, what it matched, and the first two rows of cards
     page.goto(f"{SITE}/?q=cheap+green+elves+that+ramp")
     page.wait_for_selector("#results .card")
@@ -124,6 +131,17 @@ with sync_playwright() as p:
     page.mouse.move(0, 0)
     graph = at(page.locator("#packages-graph"))
     save(page, "screenshot-package", {"x": graph["x"] - 12, "y": graph["y"] - 12, "width": graph["width"] + 24, "height": graph["height"] + 24})
+
+    # 3e. That package's details, from the middle of its graph (a taller window: the dialog's top half in view)
+    page.set_viewport_size({"width": WIDTH, "height": 1150})
+    page.locator("#packages-graph g.node.hub").click()
+    page.wait_for_selector("#package-modal[open] #package-stats .stat")
+    settle(page, 2000)
+    dialog = page.locator("#package-modal").bounding_box()
+    shot = Image.open(io.BytesIO(page.screenshot()))  # the dialog sits over the viewport, not the page
+    shot.crop((int(dialog["x"]), int(dialog["y"]), int(dialog["x"] + dialog["width"]), int(dialog["y"] + dialog["height"])))         .save(os.path.join(OUT, "screenshot-package-details.webp"), quality=82, method=6)
+    page.keyboard.press("Escape")
+    page.set_viewport_size({"width": WIDTH, "height": 900})
 
     # 4. Tournaments: the last 30 days' highlights, the period's numbers and the commanders' table
     page.goto(f"{SITE}/?tournaments")

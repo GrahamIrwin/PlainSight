@@ -22,6 +22,8 @@ The site's own address is a landing page of its own (no header or search): the n
 the site is, and a tile for each part (Find cards at `?search`, Deck recommendations, Commanders, Trends, Prices and Tournaments),
 each with a card's art (hard-coded Scryfall art crops, so the page needs no data of its own).
 
+![The landing page: PlainSight, a line on what the site is, and six tiles with card art: Find cards, Deck recommendations, Commanders, Trends, Prices and Tournaments](docs/images/screenshot-landing.webp)
+
 ![Searching “cheap green elves that ramp”: the terms it matched, and Llanowar Elves, Elvish Mystic and other cheap green mana elves, each a 100% match](docs/images/screenshot-search.webp)
 
 ## How it works
@@ -270,6 +272,8 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
    one's cheapest printing, cheaper cards that do the same thing for any of them, its cEDH tournament
    results (as Test a package shows them), and its play rate and tournament win rate by month (as a card's
    Over time). Combos open the same way, with what they make.
+
+   ![The Bloom Tender + Faeburrow Elder package's details: 41% of these decks run all of them, its two cards and their prices, both for their total at their cheapest printings, cheaper cards that do the same thing for Bloom Tender, and its cEDH tournament results with the difference's likely range](docs/images/screenshot-package-details.webp)
 
    ![Derevi's package map: packages as nodes, each showing half of its two cards' art, linked when the same decks run them, the most linked in the middle; Bloom Tender + Faeburrow Elder pointed at, its name shown and 41% of these decks run all of them (1,323 decks)](docs/images/screenshot-packages.webp)
 
