@@ -594,7 +594,7 @@ function graphChart(box, graph, opts) {
   box.replaceChildren();
   // win: {lists, w, sets(node) -> its cards}, the tournament decks to tell win rates from (none: no Win rate)
   const ties = win?.lists ? winTies(win.lists, win.w, new Map(graph.nodes.filter(n => n.kind !== "won").map(n => [n.key, win.sets(n)])),
-    graph.edges.filter(e => e.kind !== "member").map(e => [e.a, e.b])) : null;
+    graph.edges.map(e => [e.a, e.b])) : null;
   const canWin = ties && ties.decks >= 2 * MIN_RESULT_DECKS;
   const winView = canWin && graphView === "win";
   if (winView) graph = { ...graph, nodes: graph.nodes.filter(n => n.kind !== "won"), won: [] }; // its lines say it
@@ -736,14 +736,7 @@ function graphChart(box, graph, opts) {
     hit.addEventListener("pointerleave", () => focus(null));
     return hit;
   };
-  // A package's lines to its own cards (kind "member"): all alike, under the rest, in either view
-  const members = graph.edges.filter(e => e.kind === "member");
-  for (const e of members) {
-    const node = line(byKey.get(e.a), byKey.get(e.b), { class: "tie member" });
-    if (lineTip && !winView) texts.set(e, lineTip(e, byKey.get(e.a), byKey.get(e.b)));
-    root.append(node, ...(texts.has(e) ? [hitFor(node, e)] : []));
-  }
-  const ranked = graph.edges.filter(e => e.kind !== "member").sort((p, q) => q.strength - p.strength);
+  const ranked = [...graph.edges].sort((p, q) => q.strength - p.strength);
   const together = ranked.filter(e => e.strength >= 0);
   // Win rate: each line green or red as the decks playing both its ends win more or less than the rest, the
   // clearer the darker; grey dots where too few decks play both to tell. The numbers when pointed at
@@ -779,7 +772,7 @@ function graphChart(box, graph, opts) {
     return svg;
   };
   const wins = winView ? ranked.map(pairWin) : [];
-  legendBox.replaceChildren(...[members.length && legend.member && [sample([{ class: "tie member" }], 28), legend.member], ...(winView ? [
+  legendBox.replaceChildren(...(winView ? [
     wins.some(x => x.lift !== null && x.lift >= 0) && [sample([0.6, 0.85, 1].map(o => ({ class: "tie win pos", "stroke-opacity": o }))),
       "Tournament decks with both win more than the rest (darker: clearer)"],
     wins.some(x => x.lift !== null && x.lift < 0) && [sample([0.6, 0.85, 1].map(o => ({ class: "tie win neg", "stroke-opacity": o }))),
@@ -792,7 +785,7 @@ function graphChart(box, graph, opts) {
     lifts.some(l => l < 0) && [sample([{ class: "won-link neg" }], 28), legend.less],
     graph.nodes.some(n => n.held !== undefined) && [el("span", { className: "held-sample", textContent: "2/4" }),
       "Your deck has only some of its cards (2 of 4)"],
-  ])].filter(Boolean).map(([svg, text]) => el("li", {}, svg, text)));
+  ]).filter(Boolean).map(([svg, text]) => el("li", {}, svg, text)));
   // A package's name ("A + B") is drawn under it cut short to fit: it shows in full over the graph, in place
   // of the short one, while its node is pointed at
   const full = n => n.kind === "package" && n !== hub;
@@ -998,10 +991,9 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
     graphChart(box, graph, {
       title: `${title(cards)}: its cards, and the cards decks with it add most`,
       breadcrumb: [[`All ${nouns}`, map], [title(cards), null]],
-      hint: `The ${noun} in the middle, linked to ${have ? "the cards of it your deck runs" : "its cards"}; further out, the cards `
-        + `decks with it add most${have ? " that your deck runs too" : ""}. Pick a card to open it.`,
+      hint: `The ${noun} in the middle, ${have ? "the cards of it your deck runs" : "its cards"} beside it, linked to each other; further `
+        + `out, the cards decks with it add most${have ? " that your deck runs too" : ""}. Pick a card to open it.`,
       legend: {
-        member: `The ${noun}'s cards`,
         together: "Decks that play one tend to play the other (thicker: more so)",
         apart: "Decks play one or the other, rarely both",
         more: "Tournament decks win more with it",
