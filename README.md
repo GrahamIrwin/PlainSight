@@ -255,7 +255,7 @@ after the vector space search behind the card search)
    don't go together just for being in the same kind of deck. Packages show as a list ("31% of these
    decks play all of them (412)") or, with 3 or more, as a **graph** (Graph | List; the graph first):
    one node per package run by enough of the build's decks (`packageMap`, the 12 most run; 8 on a
-   phone), named for its two strongest cards (half of each one's art on it; the name under it, cut short
+   phone), named for its cards (each one's art in a slice of it, two cards a half each; the name under it, a line a card, cut short
    to fit, shows whole when it's pointed at), every line the correlation between decks running two
    packages, ranked and coloured like the synergy graph's, dotted for either/or packages (different
    builds). Picking a package swaps in its own graph
@@ -352,8 +352,11 @@ after the vector space search behind the card search)
    - **Test a card or a package**: its example is a random niche card, one
      5 to 25% of the commander's tournament decks play. Pick one or more cards (in the address bar
      as `package=`) to compare the decks that play all of them with those that
-     play none, over the chosen period, pulled toward the commander's win rate
-     the same way (`packageResults`). It needs each tournament deck's cards, so
+     play none, over the chosen period (`packageResults`). The difference is the two win rates' gap as
+     they are, with the range the real one most likely lies in (two standard errors either way, `gapTile`)
+     as words and a bar around 0: clear when the range leaves out 0, and greyed with "Too few games to be
+     sure" when it doesn't, so a side with a handful of decks shows how little it says rather than an
+     adjusted number that disagrees with the win rates above it. It needs each tournament deck's cards, so
      `results/lists/<file name>.json` holds them one by one, fetched only when
      a card is picked, with each one's tournament month (`months`).
    - **Made the cut**: among the decks in events with a top cut, the cards whose share of decks

@@ -304,6 +304,7 @@ test("a package of cards: the decks playing all of them against those playing no
   assert.deepEqual(result.none, { decks: 1, games: 6, wins: 1, cutDecks: 0, cuts: 0 });
   assert.deepEqual(result.some, { decks: 1, games: 6, wins: 0, cutDecks: 1, cuts: 0 });
   assert.ok(result.lift > 0 && result.evidence > 0);
+  assert.ok(Math.abs(result.gap - (5 / 12 - 1 / 6)) < 1e-12 && Math.abs(result.gap / result.spread - result.evidence) < 1e-9);
   // One card is the same comparison as cardResults' (here, 9 over every window)
   const nine = packageResults(lists, [9], 3);
   assert.equal(nine.all.decks, 3);

@@ -696,6 +696,8 @@ function compare(k1, n1, k2, n2, rate) {
 // over window w: the decks that play all of them against the decks that play none, as cardResults
 // compares a card's. Decks playing only some of them are counted apart. Each side: {decks, games,
 // wins, cutDecks (in events with a top cut), cuts}; lift and evidence: null with no decks on a side.
+// gap: the two sides' win rates' difference as they are, and spread its standard error (evidence is
+// gap / spread: the gap is clear when gap ± 2 spreads leaves out 0).
 export function packageResults(lists, cards, w) {
   const position = new Map(lists.cards.map((c, p) => [c, p]));
   const wanted = cards.map(c => position.get(c));
@@ -715,7 +717,8 @@ export function packageResults(lists, cards, w) {
   }
   const rate = (all.wins + none.wins + some.wins) / (all.games + none.games + some.games);
   const comparable = all.games && none.games && rate > 0 && rate < 1;
-  return { all, none, some, ...(comparable ? compare(all.wins, all.games, none.wins, none.games, rate) : { lift: null, evidence: null }) };
+  return { all, none, some, ...(comparable ? { ...compare(all.wins, all.games, none.wins, none.games, rate), gap: all.wins / all.games - none.wins / none.games,
+    spread: Math.sqrt(DESIGN_EFFECT * rate * (1 - rate) * (1 / all.games + 1 / none.games)) } : { lift: null, evidence: null }) };
 }
 
 // === A card with a commander: what its decks play more with it, and win more with it ===

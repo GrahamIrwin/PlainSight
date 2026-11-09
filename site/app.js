@@ -632,10 +632,12 @@ function graphChart(box, graph, opts) {
   // node) is drawn bigger
   const byKey = new Map(graph.nodes.map(n => [n.key, n]));
   const hub = graph.nodes.find(n => n.kind === "center" || n.key === "pkg");
-  // Packages: their names take two lines, so more room under them
+  // Packages: their names take a line a card, so more room under them
   const packages = graph.nodes.some(n => n.kind === "package" && n !== hub);
+  const nameRows = n => (n.kind === "package" && n !== hub ? nameOf(n).text.split(" + ").length : 1);
   const charW = narrow ? 7.2 : 8.4, lineH = narrow ? 15 : 17, most = narrow ? 13 : 22;
-  const [mx, top, bottom] = [size + 12 + (narrow ? 26 : 60), size * 1.3 + 8, size * 1.3 + 22 + (packages ? lineH : 0)];
+  const [mx, top, bottom] = [size + 12 + (narrow ? 26 : 60), size * 1.3 + 8,
+    size * 1.3 + 22 + (Math.max(1, ...graph.nodes.map(nameRows)) - 1) * lineH];
   const xs = graph.nodes.map(n => n.x), ys = graph.nodes.map(n => n.y);
   const [x0, y0] = [Math.min(...xs), Math.min(...ys)];
   const [rx, ry] = [Math.max(0.1, Math.max(...xs) - x0), Math.max(0.1, Math.max(...ys) - y0)];
@@ -651,7 +653,6 @@ function graphChart(box, graph, opts) {
   const lift = new Map(winView ? [...ties.nodes].filter(([, x]) => x.lift !== null && Math.abs(x.evidence) >= SIGNAL).map(([k, x]) => [k, x.lift]) : []);
   // The room for a name under a node: the nearest node across whose circle or name is level with it (each
   // name centred under its node, so two level names share the space between them; a circle, half of it)
-  const nameRows = n => (n.kind === "package" && n !== hub ? 2 : 1);
   const band = n => { const [, y] = at(n), r = radius(n); return [y - r, y + r + 4 + nameRows(n) * lineH]; };
   const room = n => {
     const [x, y] = at(n), r = radius(n), mine = [y + r, y + r + 4 + nameRows(n) * lineH];
@@ -680,14 +681,23 @@ function graphChart(box, graph, opts) {
   };
   const root = svgEl("svg", { viewBox: `0 0 ${W} ${H}`, role: "group", "aria-label": title });
   const defs = svgEl("defs", {});
-  // Each size's circle, and its left and right halves (a two-card package shows half of each card)
-  for (const r of new Set(graph.nodes.map(radius))) {
-    for (const [id, shape] of [["", svgEl("circle", { r })], ["-l", svgEl("path", { d: `M0 ${-r}A${r} ${r} 0 0 0 0 ${r}Z` })],
-      ["-r", svgEl("path", { d: `M0 ${-r}A${r} ${r} 0 0 1 0 ${r}Z` })]]) {
-      const clip = svgEl("clipPath", { id: `syn-clip-${drawing}-${r}${id}` });
+  // A node's cards' art: one card's, or a package's every card's, each in a slice of the circle (k of them:
+  // the first's from the top round to the left, the rest on round; two cards, the left half and the right).
+  // Each size's circle, and its slices for each k drawn at it
+  const artsOf = n => [nameOf(n).art].flat().filter(a => a !== null && a !== undefined);
+  const edge = (r, turn) => [r * Math.sin(turn), -r * Math.cos(turn)]; // turn: clockwise from the top
+  const slice = (k, i) => [-(i + 1) * 2 * Math.PI / k, -i * 2 * Math.PI / k];
+  for (const id of new Set(graph.nodes.map(n => `${radius(n)}-${artsOf(n).length > 1 ? artsOf(n).length : 1}`))) {
+    const [r, k] = id.split("-").map(Number);
+    const shapes = k === 1 ? [svgEl("circle", { r })] : Array.from({ length: k }, (_, i) => {
+      const [from, to] = slice(k, i), [ax, ay] = edge(r, from), [bx, by] = edge(r, to);
+      return svgEl("path", { d: `M0 0L${ax.toFixed(2)} ${ay.toFixed(2)}A${r} ${r} 0 ${k < 2 ? 1 : 0} 1 ${bx.toFixed(2)} ${by.toFixed(2)}Z` });
+    });
+    shapes.forEach((shape, i) => {
+      const clip = svgEl("clipPath", { id: `syn-clip-${drawing}-${r}-${k}-${i}` });
       clip.append(shape);
       defs.append(clip);
-    }
+    });
   }
   root.append(defs);
   // Played together: ranked, strongest first, and by their fifth of the ranking thick dark green to thin
@@ -832,17 +842,19 @@ function graphChart(box, graph, opts) {
     const g = svgEl("g", { class: `node ${n.kind}${n === hub ? " hub" : ""}${lift.has(n.key) ? lift.get(n.key) > 0 ? " wins" : " loses" : ""}${have}`,
       transform: `translate(${x.toFixed(1)},${y.toFixed(1)})` });
     g.append(svgEl("title", {}, tipOf(n)), svgEl("circle", { class: "back", r }));
-    // Its card's art; two cards' (a package's): the left half of the circle the first's, the right the second's
-    const { art } = nameOf(n);
-    const arts = (Array.isArray(art) ? art : [art]).filter(a => a !== null && a !== undefined).slice(0, 2);
+    // Its card's art, or each of its cards' in its slice, centred on the slice's middle
+    const arts = artsOf(n), k = arts.length;
     arts.forEach((a, i) => {
-      const half = arts.length === 2 ? (i ? 1 : -1) : 0; // each art's middle in the middle of its half
-      const img = svgEl("image", { x: -r * 1.4 + half * r / 2, y: -r, width: r * 2.8, height: r * 2,
-        preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#syn-clip-${drawing}-${r}${half ? (half < 0 ? "-l" : "-r") : ""})` });
+      const [dx, dy] = k > 1 ? edge(0.45 * r, (slice(k, i)[0] + slice(k, i)[1]) / 2) : [0, 0];
+      const img = svgEl("image", { x: -r * 1.4 + dx, y: -r + dy, width: r * 2.8, height: r * 2,
+        preserveAspectRatio: "xMidYMid slice", "clip-path": `url(#syn-clip-${drawing}-${r}-${k > 1 ? k : 1}-${i})` });
       cardInfo(a).then(info => img.setAttribute("href", artCrop(info.id)));
       g.append(img);
     });
-    if (arts.length === 2) g.append(svgEl("line", { class: "split", x1: 0, y1: -r, x2: 0, y2: r }));
+    if (k > 1) for (let i = 0; i < k; i++) {
+      const [ex, ey] = edge(r, slice(k, i)[1]);
+      g.append(svgEl("line", { class: "split", x1: 0, y1: 0, x2: ex.toFixed(2), y2: ey.toFixed(2) }));
+    }
     // A package's own node is named by the breadcrumb above: a name under it would run into its cards
     if (!(n === hub && n.kind === "package")) {
       labels.set(n, label(n, x, y, r));
@@ -921,7 +933,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
   const makes = new Map(packages.filter(p => p.makes).map(p => [p.cards.join("."), p.makes]));
   const what = cards => (makes.get(cards.join(".")) ? `; makes ${makes.get(cards.join("."))}` : "");
   const front = c => frontName(names[c]);
-  const title = cards => cards.slice(0, 2).map(front).join(" + ");
+  const title = cards => cards.map(front).join(" + ");
   const m = members.length;
   const share = k => `${percent(k / m)} of ${these} (${decksText(k)})`;
   // "tournament decks with them: win rate 6.4 points higher than with none (120 decks against 300)"
@@ -946,13 +958,13 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
     }
     graphChart(box, graph, {
       title: `${Nouns} ${these} play`,
-      hint: `Each circle is a ${noun} ${have ? `${lead} decks play that your deck runs` : `${these} play`}, named by its first `
-        + `two cards; linked ones sit close together. Point at one for its numbers, or pick it to see its cards.`,
+      hint: `Each circle is a ${noun} ${have ? `${lead} decks play that your deck runs` : `${these} play`}, showing and named by `
+        + `its cards; linked ones sit close together. Point at one for its numbers, or pick it to see its cards.`,
       legend: {
         together: "Decks that run one tend to run the other (thicker: more so)",
         apart: "Decks run one or the other, rarely both",
       },
-      label: n => ({ text: title(n.cards), art: n.cards.slice(0, 2) }),
+      label: n => ({ text: title(n.cards), art: n.cards }),
       tip: n => `${n.cards.map(front).join(", ")}${what(n.cards)}: ${percent(n.decks / m)} of ${these} run all of them (${decksText(n.decks)})`
         + [...(n.lift === undefined ? [] : [higher(n, "them", "none")]), ...yours(n)].map(t => `; ${t}`).join(""),
       onPick: n => open(n.cards),
@@ -980,7 +992,7 @@ function packageCharts(box, { shard, packages, members, names, lead, these, list
         together: "Decks that play one tend to play the other (thicker: more so)",
         apart: "Decks play one or the other, rarely both",
       },
-      label: n => ({ text: n.card === undefined ? title(cards) : front(n.card), art: n.card ?? cards.slice(0, 2) }),
+      label: n => ({ text: n.card === undefined ? title(cards) : front(n.card), art: n.card ?? cards }),
       tip: n => {
         if (n.key === "pkg") return `${cards.map(front).join(", ")}${what(cards)}: ${percent(k / m)} of ${these} run all of them (${decksText(k)})`
           + (n.lift === undefined ? "" : `; ${higher(n, "them", "none")}`) + `. Pick it for the ${noun}'s price, results and trends.`;
@@ -2396,6 +2408,24 @@ function statTile(label, value, note, tone) {
 
 // A package's results in a commander's tournament decks (lists, over window w, "the last <periodText>"): stat
 // tiles, and a note on them
+// The Difference tile: the gap between two win rates as they are, and the range the real one most likely
+// lies in (SIGNAL spreads either way), as words and as a bar around 0; clear (sure) when the range
+// leaves out 0. who: "it" or "them"
+const ptsText = x => `${Math.abs(x * 100).toFixed(1)} pts`;
+function gapTile(gap, spread, sure, who) {
+  const [lo, hi] = [gap - SIGNAL * spread, gap + SIGNAL * spread];
+  const dir = x => (x >= 0 ? "higher" : "lower");
+  const tone = sure ? (gap > 0 ? "up" : "down") : "";
+  const tile = statTile("Difference", el("span", { className: sure ? "" : "unsure", textContent: points(gap) }), sure
+    ? `Clearly ${dir(gap)} with ${who}: somewhere from ${ptsText(gap > 0 ? lo : hi)} to ${ptsText(gap > 0 ? hi : lo)} ${dir(gap)}`
+    : `Too few games to be sure: somewhere from ${ptsText(lo)} ${dir(lo)} to ${ptsText(hi)} ${dir(hi)}`, tone);
+  // the bar: 0 in the middle, the range, the gap as a dot
+  const most = 1.15 * Math.max(Math.abs(lo), Math.abs(hi), 0.02), at = x => `${50 + 50 * x / most}%`;
+  tile.append(el("span", { className: `gap-range ${tone}`, ariaHidden: "true" },
+    el("span", { className: "zero" }), el("span", { className: "range", style: `left:${at(lo)};right:calc(100% - ${at(hi)})` }),
+    el("span", { className: "dot", style: `left:${at(gap)}` })));
+  return tile;
+}
 function packageView(data, cards, w, lead, periodText) {
   const r = packageResults(data, cards, w);
   const one = cards.length === 1;
@@ -2407,12 +2437,11 @@ function packageView(data, cards, w, lead, periodText) {
       statTile(`${one ? "With it" : "With all of them"}: win rate`, r.all.games ? percent1(r.all.wins / r.all.games) : "–", sides(r.all)),
       statTile(`${one ? "Without it" : "With none"}: win rate`, r.none.games ? percent1(r.none.wins / r.none.games) : "–", sides(r.none)),
       r.lift === null ? statTile("Difference", "–", `Too few decks ${r.all.decks ? "without" : "with"} ${one ? "it" : "them"} to compare`)
-        : statTile("Difference", points(r.lift), sure ? `A clearly ${r.lift > 0 ? "higher" : "lower"} win rate with ${one ? "it" : "them"}`
-          : "Too few decks to be sure yet", sure ? (r.lift > 0 ? "up" : "down") : ""),
+        : gapTile(r.gap, r.spread, sure, one ? "it" : "them"),
     ],
     note: (r.some.decks ? `${r.some.decks.toLocaleString()} ${r.some.decks === 1 ? "deck plays" : "decks play"} only some of them, left out. ` : "")
-      + `In the last ${periodText}. As for single cards, both sides are pulled toward ${lead}'s win rate, so a few decks need a big difference to show one; `
-      + "and a card can stand for a style of build rather than win on its own.",
+      + `In the last ${periodText}. The range is where the real difference most likely is, given how many games each side played `
+      + "(two standard errors either way); a card can stand for a style of build rather than win on its own.",
   };
 }
 // Every commander's results and each card's across commanders (decks/results/index.json; null: none yet)
