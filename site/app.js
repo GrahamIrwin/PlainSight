@@ -187,7 +187,7 @@ $("intro").hidden = searching || landing || otherMode;
 $("landing").hidden = !landing;
 document.body.classList.toggle("landing-page", landing);
 $("results").hidden = !searching;
-form.hidden = deckMode || commandersMode || trendsMode || tournamentsMode || pricesMode;
+form.hidden = landing || otherMode;
 $("deck-view").hidden = !deckMode;
 $("commander-view").hidden = !commandersMode;
 $("trends-view").hidden = !trendsMode;

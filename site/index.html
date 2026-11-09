@@ -231,8 +231,18 @@
     .filter-actions { display: flex; align-items: center; justify-content: flex-end; gap: 18px; }
 
     /* ---------- Landing page: a tile into each part, its art over its name ---------- */
-    .landing { max-width: 1040px; margin: 0 auto; }
-    .land-lede { max-width: 640px; margin: 26px auto 0; text-align: center; font-size: 18px; line-height: 1.55; color: var(--ink-soft); }
+    .landing { max-width: 1040px; margin: 0 auto; padding-top: 56px; }
+    /* Its own page: no masthead, search or currency */
+    .landing-page :is(.masthead, #search, #currency, .skip) { display: none; }
+    .land-hero { position: relative; overflow: hidden; border-radius: 20px; border: 1px solid var(--rule);
+      min-height: 380px; display: grid; place-items: center; text-align: center; box-shadow: 0 30px 60px -30px rgb(0 0 0 / .7); }
+    .land-hero-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; }
+    .land-hero::after { content: ""; position: absolute; inset: 0;
+      background: radial-gradient(ellipse at center, rgb(16 11 8 / .35), rgb(16 11 8 / .78)); }
+    .land-hero-text { position: relative; z-index: 1; padding: 48px 28px; color: #f4ead8; }
+    .land-hero h1 { font-size: clamp(48px, 9vw, 92px); line-height: 1; letter-spacing: .01em; color: #f8efdf; text-shadow: 0 3px 24px rgb(0 0 0 / .6); }
+    .land-tagline { margin: 14px 0 0; font-variant-caps: all-small-caps; letter-spacing: .2em; font-size: 19px; color: #e2cfa6; }
+    .land-lede { max-width: 600px; margin: 20px auto 0; font-size: 18.5px; line-height: 1.55; color: #eadfcb; text-shadow: 0 1px 10px rgb(0 0 0 / .6); }
     .land-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; margin-top: 40px; }
     .land-tile {
       display: flex; flex-direction: column; overflow: hidden; color: inherit; text-decoration: none;
@@ -247,12 +257,15 @@
     .land-tile .numeral { font-family: "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif; font-weight: normal; color: var(--brass); margin-right: 10px; letter-spacing: .04em; }
     .land-tile p { margin: 0 18px 18px; color: var(--ink-soft); font-size: 15.5px; line-height: 1.5; }
     .land-tile:hover, .land-tile:focus-visible { transform: translateY(-4px); border-color: var(--brass); box-shadow: 0 18px 28px -14px rgb(0 0 0 / .55); outline: none; }
-    .landing-page #filters { display: none; } /* the search on the landing page: just its bar */
     @media (max-width: 900px) { .land-tiles { grid-template-columns: repeat(2, 1fr); } }
     /* A phone: each tile a row, its art beside its name */
     @media (max-width: 560px) {
+      .landing { padding-top: 48px; }
+      .land-hero { min-height: 300px; border-radius: 16px; }
+      .land-hero-text { padding: 36px 18px; }
+      .land-tagline { font-size: 15px; letter-spacing: .12em; }
       .land-tiles { grid-template-columns: 1fr; gap: 12px; margin-top: 28px; }
-      .land-lede { font-size: 16.5px; }
+      .land-lede { font-size: 16px; }
       .land-tile { display: grid; grid-template-columns: 108px 1fr; }
       .land-tile img { grid-row: span 2; height: 100%; aspect-ratio: auto; border-bottom: 0; border-right: 1px solid var(--rule); }
       .land-tile h2 { font-size: 18px; margin: 12px 14px 2px; }
@@ -945,10 +958,18 @@
         </details>
       </form>
 
-      <!-- The landing page (no address but the site's): a line on what it is, and a way into each part -->
+      <!-- The landing page (no address but the site's): a page of its own, no header or search; its name
+           over a Plains, a line on what it is, and a way into each part -->
       <div class="landing" id="landing" hidden>
-        <p class="land-lede">Search every Magic card in plain English, and see what Commander decks really
-          play, from public decklists and cEDH tournament results.</p>
+        <header class="land-hero">
+          <img class="land-hero-art" src="https://cards.scryfall.io/art_crop/front/0/9/09ac862f-0a51-44dd-b86f-9412b8218b13.jpg" alt="">
+          <div class="land-hero-text">
+            <h1>PlainSight</h1>
+            <p class="land-tagline">A plain-English card catalogue</p>
+            <p class="land-lede">Search every Magic card in plain English, and see what Commander decks really
+              play, from public decklists and cEDH tournament results.</p>
+          </div>
+        </header>
         <nav class="land-tiles" aria-label="Parts of the site">
         <a class="land-tile" href="?search">
           <img src="https://cards.scryfall.io/art_crop/front/a/2/a24b4cb6-cebb-428b-8654-74347a6a8d63.jpg" alt="" loading="lazy" decoding="async" title="Demonic Tutor">
