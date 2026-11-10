@@ -771,6 +771,9 @@ def crawl(per_commander, only=None, hours=None, top=None, upload=False, state_pa
 #              window, games, wins, top cut (0: none in the event, 1: missed, 2: made), gaps
 #              between the positions in cards of the cards it plays]; months: the month ("YYYY-MM")
 #              of each deck's tournament, in the same order as decks
+#   results/card-commanders/<block>.json  for each of a block of CARD_BLOCK cards, the commanders whose
+#              tournament decks play it (MIN_RESULT_DECKS or more in two years), flat: [commander's number in
+#              results/index.json, decks playing it in each window, ...]
 #   results/pilots.json  every pilot, for finding one by name or commander: see pilot_index()
 #   results/pilots/<block>.json  for the pilots numbered in a block of PILOT_BLOCK: {pilot: [name,
 #              [[date, event, players, top cut (players; 0: none), standing, wins, losses, draws, commander file name ("": not
@@ -1203,6 +1206,16 @@ def pooled(standings, field):
     return out
 
 
+def commanders_playing(standings, ranked):
+    """{card: the commanders whose tournament decks play it, flat: [its number in ranked (results/index.json's
+    commanders), its decks playing the card in each window, ...]}, from tournament_stats' standings"""
+    out = defaultdict(list)
+    for i, key in enumerate(ranked):
+        for card, row in zip(standings[key]["cards"], standings[key]["stats"]):
+            out[card] += [i, *row[::5]]
+    return out
+
+
 def load_combos(path=COMBOS):
     """Commander Spellbook's combos: [(id, oracle ids, those that must be the commander, what a commander's
     file says of it: [other pieces it needs, what it makes, how it works])], see build. Downloads them the
@@ -1297,14 +1310,18 @@ def build(corpus, cards, tags=None, out_dir=OUT_DIR, prices=None, today=None, re
         field = next(iter(standings.values()))["field"]
         overall = pooled(standings, field)
         kept = sorted((c for c in overall if overall[c][-1][0] >= MIN_POOLED_DECKS), key=lambda c: (-overall[c][-1][0], c))
+        ranked = sorted(standings, key=lambda k: (-standings[k]["totals"][-1][0], k))
         write_json(os.path.join(out_dir, "results", "index.json"), {
             "windows": RESULT_WINDOWS, "field": field,
             "highlights": highlights(results, cards, today),
-            "commanders": sorted(([key, sum(s["totals"], [])] for key, s in standings.items()),
-                                 key=lambda c: (-standings[c[0]]["totals"][-1][0], c[0])),
+            "commanders": [[key, sum(standings[key]["totals"], [])] for key in ranked],
             "cards": kept,
             "stats": [[x for d, n, lift, evidence in overall[c] for x in (d, n, round(lift * 10000), round(evidence * 100))]
                       for c in kept]})
+        playing = commanders_playing(standings, ranked)
+        for b in {c // CARD_BLOCK for c in playing}:
+            write_json(os.path.join(out_dir, "results", "card-commanders", f"{b}.json"),
+                       [playing.get(n, []) for n in range(b * CARD_BLOCK, (b + 1) * CARD_BLOCK)])
     histories = pilot_histories(results, cards, standings)
     if histories:
         write_json(os.path.join(out_dir, "results", "pilots.json"), pilot_index(histories))

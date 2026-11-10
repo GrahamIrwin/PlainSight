@@ -388,7 +388,12 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
      share of decks differs most between those that made the cut and those that missed it, and the
      cards the ones that made it play more that yours doesn't), and notes on cards to add and
      cut. A card's details say how its decks did, with that commander and
-     across commanders.
+     across commanders, and list the commanders whose tournament decks
+     played it in the last 3 months (or the shortest period any did), most
+     decks first, e.g. "150 of 195 decks (77%)", each linked to its page's
+     Tournaments tab (`results/card-commanders/<block>.json`: for each of 16
+     cards, each commander's decks playing it in each period, fetched when
+     the card is opened).
 5. **Trends** (`?trends`) shows rising and most popular commanders and cards,
    and new cards, over decks made in the last 7, 30 or 90 days or all time.
    Filters (color identity, where a commander must be exactly the colors

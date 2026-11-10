@@ -737,9 +737,13 @@
     /* A table: names in a column as wide as the longest, numbers beside them */
     .with-list { display: grid; grid-template-columns: max-content 1fr; align-items: baseline; gap: 8px 18px; }
     .with-list li { display: contents; }
-    .with-list li > button { justify-self: start; font-size: 16px; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .with-list li > button, .with-list li > a, .with-list li > span { justify-self: start; font-size: 16px; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .with-list small { font-size: 16px; font-variant-numeric: tabular-nums; }
     @media (max-width: 600px) { .with-list { grid-template-columns: 1fr; gap: 2px; } .with-list small { margin-bottom: 8px; } }
+    /* In a card's tournament box, narrower: long names shorten, the counts stay on one line */
+    .card-results .with-list li > a, .card-results .with-list li > span { max-width: 100%; }
+    .card-results .with-list small { font-size: 14px; white-space: nowrap; }
+    @media (min-width: 601px) { .card-results .with-list { grid-template-columns: minmax(0, max-content) max-content; gap: 6px 12px; } }
     .with-panel .link-button { margin-top: 8px; font-size: 16px; }
     #with-kinds { margin-bottom: 4px; }
     .with-panel .price-chart text { font-size: 14px; }

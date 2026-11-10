@@ -8,7 +8,7 @@ import {
   findBuilds, playCounts, distinctive, averageDeck, playedDifferently, buildName, buildTags, findPackages, packageGroups, comboDecks, groupCombos, comboPrimer,
   decodeTrends, withCards, filterCommanders, trendingCommanders, trendingCards, commandersPlaying, risingCards, trendingCombos,
   cardResults, packageResults, MIN_RESULT_DECKS, finishesWith, playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies,
-  pairCounts,
+  pairCounts, tournamentCommanders,
 } from "./deck.js";
 
 const PAGE_SIZE = 30;
@@ -412,6 +412,8 @@ foil.onchange = updatePrice;
 
 let deckIndex; // decks/index.json
 const getDeckIndex = () => (deckIndex ??= getJson("decks/index.json").catch(err => { deckIndex = null; throw err; }));
+let cardNames; // index/names.json
+const getNames = () => (cardNames ??= getJson("index/names.json").catch(err => { cardNames = null; throw err; }));
 let actionsFor;
 async function showCardActions(card) {
   actionsFor = card;
@@ -441,7 +443,8 @@ async function showCardResults(card) {
     lines.push(el("p", {}, el("strong", { className: here.lift > 0 ? "up" : "down", textContent: points(here.lift) }),
       ` with ${tournament.lead} in the last ${tournament.period}. ${here.story}`));
   }
-  const all = await getResultsIndex();
+  const [all, pairs] = await Promise.all([getResultsIndex(), getJson(`decks/results/card-commanders/${Math.floor(card / CARD_BLOCK)}.json`)
+    .then(rows => rows[card % CARD_BLOCK] ?? [], () => [])]);
   if (actionsFor !== card) return; // another card was opened meanwhile
   const i = all ? all.cards.indexOf(card) : -1;
   if (i >= 0) {
@@ -453,6 +456,23 @@ async function showCardResults(card) {
         : Math.abs(evidence) < SIGNAL * 100 ? `No clear difference yet between decks with it and without it, within ${theCommanders(commanders)}.`
           : `Within ${theCommanders(commanders)}, decks with it had a win rate ${Math.abs(lift / 100).toFixed(1)} pts ${lift > 0 ? "higher" : "lower"} than decks without it.`),
       " ", el("a", { href: "?tournaments", textContent: "Tournaments →" })));
+  }
+  // The commanders whose tournament decks play it lately, most decks first
+  const { w: pw, playing } = all ? tournamentCommanders(all, pairs) : { playing: [] };
+  if (playing.length) {
+    const [names, { commanders }] = await Promise.all([getNames(), getDeckIndex()]).catch(() => [null, {}]);
+    if (actionsFor !== card) return;
+    if (names) {
+      const pages = new Set(commanders.map(c => c[0]));
+      const list = el("ul", { className: "found-list with-list" });
+      const more = el("button", { type: "button", className: "link-button", textContent: "Show more" });
+      lines.push(el("p", {}, `${playing.length === 1 ? "The commander" : `The ${playing.length.toLocaleString()} commanders`} whose tournament `
+        + `decks played it in the last ${periodName(all.windows[pw])}, most decks first:`), list, more);
+      withRows(list, more, playing.map(c => el("li", {},
+        pages.has(c.key) ? el("a", { className: "term", href: tournamentLink(c.key), textContent: commanderNames(c.key, names) })
+          : el("span", { className: "term", textContent: commanderNames(c.key, names) }),
+        el("small", { textContent: `${c.decks.toLocaleString()} of ${c.of.toLocaleString()} decks (${percent(c.share)})` }))));
+    }
   }
   if (!lines.length) return;
   box.replaceChildren(el("span", { className: "label", textContent: "In cEDH tournaments" }), ...lines);

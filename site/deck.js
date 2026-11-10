@@ -643,6 +643,18 @@ export function commandersPlaying(commanders, pairs) {
   return playing.sort((a, b) => b.share - a.share || b.decks - a.decks);
 }
 
+// The commanders whose tournament decks play a card, in the narrowest window any did: {w, playing: [{key,
+// decks (playing it), of (all its decks), share}], most decks first}. index: results/index.json; pairs: the
+// card's row of a results/card-commanders/ file, [commander number, its decks playing it in each window, ...]
+export function tournamentCommanders(index, pairs) {
+  const n = index.windows.length, rows = [];
+  for (let j = 0; j < pairs.length; j += n + 1) rows.push([index.commanders[pairs[j]], pairs.slice(j + 1, j + 1 + n)]);
+  const w = index.windows.findIndex((_, w) => rows.some(([, d]) => d[w]));
+  if (w < 0) return { w: 0, playing: [] };
+  const playing = rows.filter(([, d]) => d[w]).map(([[key, totals], d]) => ({ key, decks: d[w], of: totals[6 * w], share: d[w] / totals[6 * w] }));
+  return { w, playing: playing.sort((a, b) => b.decks - a.decks || b.share - a.share) };
+}
+
 // On a commander's page: the cards a group's recent decks (deck numbers in shard.decks) play more
 // often than all its decks do, most above first: [{p (position in shard.cards), share, was}]
 export function risingCards(shard, members, recent) {

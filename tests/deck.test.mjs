@@ -4,7 +4,7 @@ import {
   nameLookup, parseDecklist, decodeShard, similarDecks, foldCopies, recommend, closestCommanders,
   findBuilds, distinctive, averageDeck, playedDifferently, buildName, buildTags, findPackages, packageGroups, comboDecks, groupCombos, comboPrimer,
   decodeTrends, cardResults, packageResults, withCards, filterCommanders, trendingCommanders, trendingCards, commandersPlaying, risingCards,
-  playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies, finishesWith,
+  playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies, finishesWith, tournamentCommanders,
 } from "../site/deck.js";
 
 const NAMES = ["Sol Ring", "Atraxa, Praetors' Voice", "Delver of Secrets // Insectile Aberration", "Island",
@@ -416,6 +416,15 @@ test("a card's tournament results by month, against all the commander's decks; n
     { month: "2026-01", decks: 1, games: 6, wins: 3, allDecks: 2, allGames: 12, allWins: 4 }]);
   assert.deepEqual(resultsByMonth(lists, 42).map(r => r.decks), [0, 0, 0]);
   assert.deepEqual(resultsByMonth({ cards: lists.cards, decks: lists.decks }, 7), []);
+});
+
+test("the commanders whose tournament decks play a card: in the narrowest window any did, most decks first", () => {
+  const totals = decks => decks.flatMap(d => [d, 0, 0, 0, 0, 0]);
+  const index = { windows: [90, 365], commanders: [["1", totals([10, 40])], ["2", totals([4, 8])], ["3", totals([0, 20])]] };
+  assert.deepEqual(tournamentCommanders(index, [0, 2, 9, 1, 2, 3, 2, 0, 6]), { w: 0, playing: [ // tied on decks: the higher share first
+    { key: "2", decks: 2, of: 4, share: 0.5 }, { key: "1", decks: 2, of: 10, share: 0.2 }] });
+  assert.deepEqual(tournamentCommanders(index, [2, 0, 6]).w, 1); // none lately: the year's
+  assert.deepEqual(tournamentCommanders(index, []), { w: 0, playing: [] });
 });
 
 test("a card's best finishes: the decks playing it, highest place, then biggest event, then newest", () => {
