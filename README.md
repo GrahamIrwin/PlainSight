@@ -388,13 +388,13 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
      share of decks differs most between those that made the cut and those that missed it, and the
      cards the ones that made it play more that yours doesn't), and notes on cards to add and
      cut. A card's details say how its decks did, with that commander and
-     across commanders, and list the commanders whose tournament decks
-     played it in the last 3 months (or the shortest period any did), by
-     **Play rate** or **Win rate**, e.g. "82% play it (1,102 of 1,348 decks) ·
-     24.1% win rate"; commanders with under 10 decks playing it are too few to
-     go on, so they come last, faded. Each links to its page's Tournaments tab.
-     **View in tournament decks** (`?card=<number>&decks=tournament`, `&sort=win`)
-     shows the same as a page, beside **View in commander decks**
+     across commanders. Beside **View in commander decks**, **View in
+     tournament decks** (`?card=<number>&decks=tournament`, `&sort=win`)
+     opens a page of the commanders whose tournament decks played it in the
+     last 3 months (or the shortest period any did), by **Play rate** or
+     **Win rate**, e.g. "82% play it (1,102 of 1,348 decks) · 24.1% win
+     rate"; commanders with under 10 decks playing it are too few to go on, so
+     they come last, faded. Each links to its page's Tournaments tab
      (`results/card-commanders/<block>.json`: for each of 16 cards, each
      commander's decks playing it, their games and wins, in each period,
      fetched when the card is opened).

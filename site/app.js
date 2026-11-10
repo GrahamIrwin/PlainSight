@@ -415,12 +415,11 @@ const getDeckIndex = () => (deckIndex ??= getJson("decks/index.json").catch(err 
 let cardNames; // index/names.json
 const getNames = () => (cardNames ??= getJson("index/names.json").catch(err => { cardNames = null; throw err; }));
 const commanderPages = () => getDeckIndex().then(d => new Set(d.commanders.map(c => c[0]))); // the commanders with a page
-// A card's commanders in tournaments (its results/card-commanders/ row, for tournamentCommanders), in its
-// details and on its page in tournament decks: sorted by play rate or win rate, kept from card to card
+// A card's commanders in tournaments (its results/card-commanders/ row, for tournamentCommanders), on its
+// page in tournament decks: sorted by play rate or win rate
 const tournamentRow = card => getJson(`decks/results/card-commanders/${Math.floor(card / CARD_BLOCK)}.json`)
   .then(rows => rows[card % CARD_BLOCK] ?? [], () => []);
 const TOURNAMENT_SORTS = [["play", "Play rate"], ["win", "Win rate"]];
-let tournamentSort = params.get("sort") === "win" ? "win" : "play";
 const tournamentCardLink = (card, sort) => "?" + new URLSearchParams({ card, decks: "tournament", ...(sort === "win" && { sort }) });
 const playingParts = c => [`${percent(c.share)} play it (${c.decks.toLocaleString()} of ${c.of.toLocaleString()} decks)`, `${percent1(c.rate)} win rate`];
 const playingLede = (n, days) => `${n === 1 ? "The commander" : `The ${n.toLocaleString()} commanders`} whose tournament decks `
@@ -433,7 +432,7 @@ async function showCardActions(card) {
   $("in-tournaments").hidden = true; // until showCardResults finds its tournament decks
   if (card === undefined) return;
   $("in-decks").href = "?" + new URLSearchParams({ card });
-  $("in-tournaments").href = tournamentCardLink(card, tournamentSort);
+  $("in-tournaments").href = tournamentCardLink(card);
   // A commander page for it alone, or else for the partners it's played with most
   const { commanders } = await getDeckIndex().catch(() => ({ commanders: [] }));
   const key = commanders.find(([k]) => k === String(card))?.[0] ?? commanders.find(([k]) => k.split("-").includes(String(card)))?.[0];
@@ -469,29 +468,7 @@ async function showCardResults(card) {
           : `Within ${theCommanders(commanders)}, decks with it had a win rate ${Math.abs(lift / 100).toFixed(1)} pts ${lift > 0 ? "higher" : "lower"} than decks without it.`),
       " ", el("a", { href: "?tournaments", textContent: "Tournaments →" })));
   }
-  // The commanders whose tournament decks play it lately, by play rate or win rate
-  const { w: pw, playing } = all ? tournamentCommanders(all, pairs) : { playing: [] };
-  $("in-tournaments").hidden = !playing.length;
-  if (playing.length) {
-    const [names, pages] = await Promise.all([getNames(), commanderPages()]).catch(() => []);
-    if (actionsFor !== card) return;
-    if (names) {
-      const sorts = el("div", { className: "chips type-filter", role: "group", ariaLabel: "Sort by" });
-      const list = el("ul", { className: "found-list with-list" });
-      const more = el("button", { type: "button", className: "link-button", textContent: "Show more" });
-      const draw = sort => {
-        tournamentSort = sort;
-        $("in-tournaments").href = tournamentCardLink(card, sort);
-        chipRow(sorts, TOURNAMENT_SORTS, sort, draw);
-        withRows(list, more, tournamentCommanders(all, pairs, sort).playing.map(c => el("li", { className: c.few ? "few" : "" },
-          pages.has(c.key) ? el("a", { className: "term", href: tournamentLink(c.key), textContent: commanderNames(c.key, names) })
-            : el("span", { className: "term", textContent: commanderNames(c.key, names) }),
-          el("small", { textContent: playingParts(c).join(" · ") }))));
-      };
-      lines.push(el("p", { textContent: playingLede(playing.length, all.windows[pw]) }), sorts, list, more);
-      draw(tournamentSort);
-    }
-  }
+  $("in-tournaments").hidden = !pairs.length; // its page in tournament decks, once some commander's have played it
   if (!lines.length) return;
   box.replaceChildren(el("span", { className: "label", textContent: "In cEDH tournaments" }), ...lines);
   box.hidden = false;
@@ -4225,13 +4202,12 @@ async function showCardTournaments(card) {
   $("card-lede").textContent = playing.length ? playingLede(playing.length, all.windows[w])
     : `No commander's tournament decks played it in the last ${periodName(all.windows.at(-1))}.`;
   const draw = sort => {
-    tournamentSort = sort;
     history.replaceState(null, "", tournamentCardLink(card, sort));
     chipRow($("card-themes"), TOURNAMENT_SORTS, sort, draw);
     showCardCommanders(tournamentCommanders(all, pairs, sort).playing.map(c => ({ key: c.key, name: commanderNames(c.key, names),
       detail: playingParts(c), href: pages.has(c.key) ? tournamentLink(c.key) : null, faint: c.few })));
   };
-  if (playing.length) draw(tournamentSort);
+  if (playing.length) draw(params.get("sort") === "win" ? "win" : "play");
   commanderMessage("");
   $("card-page").hidden = false;
 }
