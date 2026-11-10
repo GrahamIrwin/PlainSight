@@ -224,8 +224,9 @@ with tempfile.TemporaryDirectory() as tmp:
     assert lead["top"] == [["2026-09-30", "Event 1", 40, 1, 4, 1, 1, "link1", 7, "Ann", 0],
                            ["2026-01-01", "Event 2", 40, 1, 5, 0, 0, "link4", 0, "", 2]], lead["top"]
     assert lead["pilots"] == [[7, "Ann", *[1, 6, 4, 1, 1, 1] * 4], [8, "Bo", *[1, 6, 1, 1, 0, 0] * 4]], lead["pilots"]
-    # Each card's commanders (their number in results/index.json) and its decks with them in each window
-    assert build_decks.commanders_playing(stats, ["0-1", "0"]) == {3: [1, 2, 2, 2, 2], 4: [1, 1, 1, 2, 2]}
+    # Each card's commanders (their number in results/index.json) and its decks with them in each window,
+    # with their games and wins
+    assert build_decks.commanders_playing(stats, ["0-1", "0"]) == {3: [1, *[2, 12, 5] * 4], 4: [1, *[1, 6, 4] * 2, *[2, 11, 9] * 2]}
     histories = build_decks.pilot_histories(events, named, stats)
     assert sorted(histories) == [7, 8] and histories[7][0] == "Ann" and histories[7][2] == "tdA"  # her TopDeck profile
     # Finding pilots by name or commander: Ann's 2 decks, 1 of them Lead's (the other's commander is unknown)

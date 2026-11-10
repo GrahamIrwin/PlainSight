@@ -740,10 +740,11 @@
     .with-list li > button, .with-list li > a, .with-list li > span { justify-self: start; font-size: 16px; max-width: 18em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .with-list small { font-size: 16px; font-variant-numeric: tabular-nums; }
     @media (max-width: 600px) { .with-list { grid-template-columns: 1fr; gap: 2px; } .with-list small { margin-bottom: 8px; } }
-    /* In a card's tournament box, narrower: long names shorten, the counts stay on one line */
+    /* In a card's tournament box, narrower: each commander's numbers under its name, long names shortened */
+    .card-results .with-list { grid-template-columns: 1fr; gap: 2px; }
     .card-results .with-list li > a, .card-results .with-list li > span { max-width: 100%; }
-    .card-results .with-list small { font-size: 14px; white-space: nowrap; }
-    @media (min-width: 601px) { .card-results .with-list { grid-template-columns: minmax(0, max-content) max-content; gap: 6px 12px; } }
+    .card-results .with-list small { font-size: 14px; margin-bottom: 6px; }
+    .with-list li.few > *, .gallery .card.faint > * { opacity: .55; } /* too few decks to go on */
     .with-panel .link-button { margin-top: 8px; font-size: 16px; }
     #with-kinds { margin-bottom: 4px; }
     .with-panel .price-chart text { font-size: 14px; }
@@ -1186,10 +1187,11 @@
               <a href="?commanders">← All commanders</a>
               <h2 id="card-name"></h2>
               <p class="muted" id="card-meta"></p>
+              <a id="card-switch"></a>
             </div>
           </div>
           <details class="panel" open>
-            <summary><h2 class="deck-heading">Commanders that play it</h2></summary>
+            <summary><h2 class="deck-heading" id="card-heading">Commanders that play it</h2></summary>
             <p class="muted deck-lede" id="card-lede"></p>
             <div class="chips type-filter" id="card-themes" role="group" aria-label="Strategy"></div>
             <div class="gallery" id="card-commanders"></div>
@@ -1850,6 +1852,7 @@
       <div class="card-actions" id="card-actions" hidden>
         <a id="as-commander" class="btn-quiet" hidden>View as commander</a>
         <a id="in-decks" class="btn-quiet">View in commander decks</a>
+        <a id="in-tournaments" class="btn-quiet" hidden>View in tournament decks</a>
       </div>
       <a id="scryfall-link" target="_blank" rel="noopener">View on Scryfall ↗</a>
       </div>

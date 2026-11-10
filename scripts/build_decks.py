@@ -773,7 +773,7 @@ def crawl(per_commander, only=None, hours=None, top=None, upload=False, state_pa
 #              of each deck's tournament, in the same order as decks
 #   results/card-commanders/<block>.json  for each of a block of CARD_BLOCK cards, the commanders whose
 #              tournament decks play it (MIN_RESULT_DECKS or more in two years), flat: [commander's number in
-#              results/index.json, decks playing it in each window, ...]
+#              results/index.json, then for each window the decks playing it, their games and wins, ...]
 #   results/pilots.json  every pilot, for finding one by name or commander: see pilot_index()
 #   results/pilots/<block>.json  for the pilots numbered in a block of PILOT_BLOCK: {pilot: [name,
 #              [[date, event, players, top cut (players; 0: none), standing, wins, losses, draws, commander file name ("": not
@@ -1208,11 +1208,12 @@ def pooled(standings, field):
 
 def commanders_playing(standings, ranked):
     """{card: the commanders whose tournament decks play it, flat: [its number in ranked (results/index.json's
-    commanders), its decks playing the card in each window, ...]}, from tournament_stats' standings"""
+    commanders), then for each window its decks playing the card, their games and wins, ...]}, from
+    tournament_stats' standings"""
     out = defaultdict(list)
     for i, key in enumerate(ranked):
         for card, row in zip(standings[key]["cards"], standings[key]["stats"]):
-            out[card] += [i, *row[::5]]
+            out[card] += [i, *(x for w in range(0, len(row), 5) for x in row[w:w + 3])]
     return out
 
 

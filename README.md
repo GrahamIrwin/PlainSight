@@ -389,11 +389,15 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
      cards the ones that made it play more that yours doesn't), and notes on cards to add and
      cut. A card's details say how its decks did, with that commander and
      across commanders, and list the commanders whose tournament decks
-     played it in the last 3 months (or the shortest period any did), most
-     decks first, e.g. "150 of 195 decks (77%)", each linked to its page's
-     Tournaments tab (`results/card-commanders/<block>.json`: for each of 16
-     cards, each commander's decks playing it in each period, fetched when
-     the card is opened).
+     played it in the last 3 months (or the shortest period any did), by
+     **Play rate** or **Win rate**, e.g. "82% play it (1,102 of 1,348 decks) ·
+     24.1% win rate"; commanders with under 10 decks playing it are too few to
+     go on, so they come last, faded. Each links to its page's Tournaments tab.
+     **View in tournament decks** (`?card=<number>&decks=tournament`, `&sort=win`)
+     shows the same as a page, beside **View in commander decks**
+     (`results/card-commanders/<block>.json`: for each of 16 cards, each
+     commander's decks playing it, their games and wins, in each period,
+     fetched when the card is opened).
 5. **Trends** (`?trends`) shows rising and most popular commanders and cards,
    and new cards, over decks made in the last 7, 30 or 90 days or all time.
    Filters (color identity, where a commander must be exactly the colors

@@ -418,12 +418,16 @@ test("a card's tournament results by month, against all the commander's decks; n
   assert.deepEqual(resultsByMonth({ cards: lists.cards, decks: lists.decks }, 7), []);
 });
 
-test("the commanders whose tournament decks play a card: in the narrowest window any did, most decks first", () => {
+test("the commanders whose tournament decks play a card: in the narrowest window any did, by play rate or win rate", () => {
   const totals = decks => decks.flatMap(d => [d, 0, 0, 0, 0, 0]);
-  const index = { windows: [90, 365], commanders: [["1", totals([10, 40])], ["2", totals([4, 8])], ["3", totals([0, 20])]] };
-  assert.deepEqual(tournamentCommanders(index, [0, 2, 9, 1, 2, 3, 2, 0, 6]), { w: 0, playing: [ // tied on decks: the higher share first
-    { key: "2", decks: 2, of: 4, share: 0.5 }, { key: "1", decks: 2, of: 10, share: 0.2 }] });
-  assert.deepEqual(tournamentCommanders(index, [2, 0, 6]).w, 1); // none lately: the year's
+  const index = { windows: [90, 365], commanders: [["1", totals([40, 80])], ["2", totals([20, 30])], ["3", totals([5, 40])]] };
+  // [commander, then each window's decks, games, wins]: 1 is played less (30%) but wins more (50%) than 2
+  // (50%, 40%); 3's 2 decks, though they won every game, are too few to go on, so they come last
+  const pairs = [0, 12, 72, 36, 20, 120, 50, 1, 10, 60, 24, 10, 60, 24, 2, 2, 12, 12, 4, 24, 12];
+  assert.deepEqual(tournamentCommanders(index, pairs).playing.map(c => c.key), ["2", "1", "3"]);
+  assert.deepEqual(tournamentCommanders(index, pairs, "win").playing.map(c => c.key), ["1", "2", "3"]);
+  assert.deepEqual(tournamentCommanders(index, pairs).playing[2], { key: "3", decks: 2, of: 5, share: 0.4, games: 12, wins: 12, rate: 1, few: true });
+  assert.equal(tournamentCommanders(index, [2, 0, 0, 0, 3, 18, 6]).w, 1); // none lately: the year's
   assert.deepEqual(tournamentCommanders(index, []), { w: 0, playing: [] });
 });
 

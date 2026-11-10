@@ -644,15 +644,22 @@ export function commandersPlaying(commanders, pairs) {
 }
 
 // The commanders whose tournament decks play a card, in the narrowest window any did: {w, playing: [{key,
-// decks (playing it), of (all its decks), share}], most decks first}. index: results/index.json; pairs: the
-// card's row of a results/card-commanders/ file, [commander number, its decks playing it in each window, ...]
-export function tournamentCommanders(index, pairs) {
+// decks (playing it), of (all its decks), share, games, wins, rate (share of games won), few}]}. index:
+// results/index.json; pairs: the card's row of a results/card-commanders/ file, [commander number, then for
+// each window its decks playing it, their games and wins, ...]. sort: "play" (the highest share of the
+// commander's decks first) or "win" (the highest win rate first). Under MIN_RESULT_DECKS decks playing it is
+// too few to go on (few): those come last, most decks first
+export function tournamentCommanders(index, pairs, sort = "play") {
   const n = index.windows.length, rows = [];
-  for (let j = 0; j < pairs.length; j += n + 1) rows.push([index.commanders[pairs[j]], pairs.slice(j + 1, j + 1 + n)]);
-  const w = index.windows.findIndex((_, w) => rows.some(([, d]) => d[w]));
+  for (let j = 0; j < pairs.length; j += 3 * n + 1) rows.push([index.commanders[pairs[j]], pairs.slice(j + 1, j + 1 + 3 * n)]);
+  const w = index.windows.findIndex((_, w) => rows.some(([, d]) => d[3 * w]));
   if (w < 0) return { w: 0, playing: [] };
-  const playing = rows.filter(([, d]) => d[w]).map(([[key, totals], d]) => ({ key, decks: d[w], of: totals[6 * w], share: d[w] / totals[6 * w] }));
-  return { w, playing: playing.sort((a, b) => b.decks - a.decks || b.share - a.share) };
+  const playing = rows.filter(([, d]) => d[3 * w]).map(([[key, totals], d]) => {
+    const [decks, games, wins] = d.slice(3 * w, 3 * w + 3), of = totals[6 * w];
+    return { key, decks, of, share: decks / of, games, wins, rate: games ? wins / games : 0, few: decks < MIN_RESULT_DECKS };
+  });
+  const by = sort === "win" ? r => r.rate : r => r.share;
+  return { w, playing: playing.sort((a, b) => a.few - b.few || (a.few ? 0 : by(b) - by(a)) || b.decks - a.decks) };
 }
 
 // On a commander's page: the cards a group's recent decks (deck numbers in shard.decks) play more
