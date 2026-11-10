@@ -8,7 +8,7 @@ on:
   workflow_dispatch: # "Run workflow" button in the Actions tab
 
 permissions:
-  contents: read
+  contents: write # each deploy's own commit (below)
   pages: write
   id-token: write
 
@@ -50,11 +50,43 @@ jobs:
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
+      # Pages deploys a commit once: deploying it again (the crawl's deploys, the weekly one, Run
+      # workflow) reports success and changes nothing. So each deploy is of a commit of its own, this
+      # one's files in a new commit on top of it that no branch points to (Pages takes any commit the
+      # repository has). actions/deploy-pages always deploys the run's commit, so the last step does
+      # what it does, with this one.
+      - id: version
+        run: |
+          sha=$(gh api repos/$GITHUB_REPOSITORY/git/commits -f message="Deploy (run $GITHUB_RUN_ID)" -f tree=$(git rev-parse 'HEAD^{tree}') -f "parents[]=$GITHUB_SHA" --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
       # Pages lets browsers reuse a file for 10 minutes, so a new index.html could run an old
       # cached app.js (or a new app.js an old deck.js). Each deploy's scripts get their own URLs.
-      - run: sed -i -E "s/\.js\"/.js?v=${GITHUB_SHA::8}\"/" site/index.html site/app.js
-      - uses: actions/upload-pages-artifact@v5
+      - run: sed -i -E "s/\.js\"/.js?v=${SHA::8}\"/" site/index.html site/app.js
+        env:
+          SHA: ${{ steps.version.outputs.sha }}
+      - id: upload
+        uses: actions/upload-pages-artifact@v5
         with:
           path: site
+      # Then, as Pages has reported success while the site stayed as it was, it waits for the site to
+      # serve this deploy's index.html (Pages' CDN keeps a file up to 10 minutes)
       - id: deployment
-        uses: actions/deploy-pages@v5
+        timeout-minutes: 30
+        run: |
+          token=$(curl -sSf -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL" | jq -r .value)
+          echo "::add-mask::$token"
+          url=$(gh api repos/$GITHUB_REPOSITORY/pages/deployments -F artifact_id=$ARTIFACT -f pages_build_version=$SHA -f oidc_token=$token --jq .page_url)
+          echo "page_url=$url" >> "$GITHUB_OUTPUT"
+          while sleep 10; do
+            status=$(gh api repos/$GITHUB_REPOSITORY/pages/deployments/$SHA --jq .status || true)
+            echo "$status"
+            case $status in succeed) break ;; deployment_*failed|deployment_cancelled|deployment_lost) exit 1 ;; esac
+          done
+          until curl -sf "$url" | grep -q "v=${SHA::8}"; do sleep 30; done
+          echo "$url serves this deploy"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ steps.upload.outputs.artifact_id }}
+          SHA: ${{ steps.version.outputs.sha }}

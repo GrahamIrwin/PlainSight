@@ -536,13 +536,17 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
 
 ## Updating card data
 
-GitHub Actions rebuilds the index and redeploys every Monday. To update right
-away (e.g. on a set's release day), open **Actions → Build and deploy → Run workflow**.
+GitHub Actions rebuilds the index and redeploys twice a day (with **Crawl decks**, below) and every
+Monday. To update right away (e.g. on a set's release day), open **Actions → Build and deploy → Run
+workflow**. Pages deploys a commit only once (deploying it again reports success and changes
+nothing), so each deploy is of a commit of its own: the run's files in a new commit on top of it that
+no branch points to. The deploy then waits for the live site to serve it, and fails if it doesn't.
 
 The deck corpus is too big for git, so it lives on the `deck-corpus` release.
-**Actions → Crawl decks** adds to it every day (the day's tournament results,
-then about two and a half hours on each site), then redeploys the site so Trends
-stays current. To grow it faster, crawl locally:
+**Actions → Crawl decks** adds to it every day. It's scheduled for 22:17 UTC, but GitHub starts it
+hours late (4 to 8 hours so far). It adds the day's prices and deploys them first (live about 15
+minutes after it starts), then crawls the day's tournament results and about two and a half hours
+on each site, then redeploys so Trends stays current. To grow it faster, crawl locally:
 
 ```
 gh release download deck-corpus --dir data --pattern 'decks-[0-9]*' --pattern decks-cards.json --pattern crawl_state.json --pattern results.jsonl.gz
@@ -604,7 +608,9 @@ printing on every day it has, nonfoil, foil and etched each on its own, in US do
 and euros (Cardmarket). The Prices tab and card details read it (see **Prices** above).
 
 - **Crawl decks** adds the day's prices from Scryfall's `default_cards` every day
-  (`build_prices.py snapshot`), dated by when Scryfall made the file.
+  (`build_prices.py snapshot`), dated by when Scryfall made the file, and deploys them before it
+  crawls decks. Scryfall makes it twice a day (about 09:05 and 21:05 UTC in summer, 10:05 and 22:05
+  in winter); the crawl runs before the morning one, so each run adds the day before.
 - `python scripts/build_prices.py backfill` adds every older day it can find: the Wayback Machine's copies of
   Scryfall's bulk files (a day each, 2023 on; older ones are cut off or have no prices), of
   MTGJSON's `AllPrices` (90 days each, from late 2021 and early 2023), its `cardPrices.csv` and
@@ -697,8 +703,8 @@ and `node --test` (Node 24).
 - `site/deck.js`: decklist parsing, similar decks, recommendations, builds, trends and tournament results
 - `worker/deck-link.js`: Cloudflare Worker that turns a deck link into a decklist
 - `site/currency.js`: currency detection, exchange rate and price formatting
-- `.github/workflows/deploy.yml`: weekly rebuild and GitHub Pages deploy
-- `.github/workflows/crawl.yml`: daily price snapshot, deck crawl and tournament results, then a deploy
+- `.github/workflows/deploy.yml`: rebuild and GitHub Pages deploy (on a push, from the crawl, weekly)
+- `.github/workflows/crawl.yml`: daily price snapshot and a deploy, then the deck crawl and tournament results, then a deploy
 - `.github/workflows/changelog.yml` and `.github/changelog.py`: post each push's code changes (to `site/`,
   `scripts/` or `worker/`, by commit title) to the PlainSight Discord channel, through the webhook in the
   `DISCORD_CHANGELOG` secret

@@ -1,11 +1,16 @@
 name: Crawl decks
 
-# Adds public Commander decks from Archidekt and Moxfield to the deck corpus, and the latest cEDH
-# tournament results from TopDeck.gg, which live on the "deck-corpus" release (too big for git), then
-# redeploys the site with them (Trends needs fresh decks).
+# Adds the day's prices to the "price-history" release and deploys them, then adds public Commander
+# decks from Archidekt and Moxfield to the deck corpus, and the latest cEDH tournament results from
+# TopDeck.gg, which live on the "deck-corpus" release (too big for git), then redeploys the site with
+# them (Trends needs fresh decks).
 on:
   schedule:
-    - cron: "0 2 * * *" # daily
+    # Daily at 22:17 UTC, off the hour (GitHub delays and drops the most runs on it). GitHub starts it
+    # hours late anyway (4 to 8 hours for this one, up to 10 for others), which from 22:17 is still
+    # before Scryfall's morning bulk files (about 09:05 UTC in summer, 10:05 in winter): so each run
+    # adds the day before's prices, live by about 9:00 UTC even 10 hours late
+    - cron: "17 22 * * *"
   workflow_dispatch: # "Run workflow" button in the Actions tab
 
 permissions:
@@ -28,10 +33,12 @@ jobs:
       - run: gh release download deck-corpus --dir data --pattern 'decks-[0-9]*.jsonl.gz' --pattern decks-cards.json --pattern crawl_state.json --pattern results.jsonl.gz
       - run: python3 -c "import sys; sys.path.insert(0, 'scripts'); import build_index; build_index.in_data(); build_index.download_bulk_data()" # card names for commanders, printings for Moxfield
       # The day's price of every printing, added to the history on the price-history release
-      # (downloaded first, so the day is added to the end of it rather than merged in on upload)
+      # (downloaded first, so the day is added to the end of it rather than merged in on upload), then
+      # a deploy, so the day's prices are live in about 15 minutes rather than after the deck crawl
       - run: |
           gh release download price-history --dir data --pattern prices.jsonl.gz || echo "No price history yet"
           python3 scripts/build_prices.py snapshot
+          gh workflow run deploy.yml
         continue-on-error: true
       # The days' tournaments from TopDeck.gg (its API key is a repository secret) take a few minutes. A
       # failure here marks the run failed, so it's seen, but the decks still crawl and everything uploads
