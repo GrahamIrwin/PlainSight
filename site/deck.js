@@ -778,6 +778,19 @@ export function winsMoreWith(lists, card, w, { min = MIN_PAIR_DECKS } = {}) {
   }).sort((a, b) => b.lift - a.lift || a.card - b.card);
 }
 
+// A commander's finishes (results/<key>.json's top rows) by decks playing card (their number in
+// results/lists/<key>.json is the row's last: -1 or none in older files), best first: highest place,
+// then the biggest event, then the newest
+export function finishesWith(lists, top, card) {
+  const p = lists.cards.indexOf(card);
+  if (p < 0) return [];
+  return top.filter(f => {
+    const deck = lists.decks[f[10]];
+    let q = 0;
+    return deck !== undefined && deck.slice(4).some(g => (q += g) === p);
+  }).sort((a, b) => a[3] - b[3] || b[2] - a[2] || b[0].localeCompare(a[0]));
+}
+
 // How many of members (numbers in shard.decks; all of them when null) play all of a's cards, all of b's,
 // and both: a graph line's numbers. {a, b, both, decks}
 export function pairCounts(shard, a, b, members = null) {

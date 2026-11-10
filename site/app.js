@@ -7,7 +7,7 @@ import {
   nameLookup, parseDecklist, decodeShard, similarDecks, foldCopies, recommend, closestCommanders,
   findBuilds, playCounts, distinctive, averageDeck, playedDifferently, buildName, buildTags, findPackages, packageGroups, comboDecks, groupCombos, comboPrimer,
   decodeTrends, withCards, filterCommanders, trendingCommanders, trendingCards, commandersPlaying, risingCards, trendingCombos,
-  cardResults, packageResults, MIN_RESULT_DECKS, playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies,
+  cardResults, packageResults, MIN_RESULT_DECKS, finishesWith, playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies,
   pairCounts,
 } from "./deck.js";
 
@@ -538,7 +538,7 @@ async function showCardWith(card) {
     el("small", { textContent: `${percent(x.base)} → ${percent(x.with)} of decks · ${decksText(x.decksWith)}` }))));
 
   // Over time: its play rate, and with tournament results, its decks' win rate
-  let lists = null, months = [], wins = [], kind = "play";
+  let lists = null, months = [], wins = [], finishes = [], kind = "play";
   const drawTime = () => overTime("with", { name, lead, shard, byMonth, months }, kind, k => { kind = k; drawTime(); });
 
   const w = tournament?.w;
@@ -554,6 +554,7 @@ async function showCardWith(card) {
       graph.nodes.length >= 3 && ["synergy", "Synergy"],
       played.length && ["played", withCount("Played more with", played.length)],
       wins.length && ["wins", withCount("Wins more with", wins.length)],
+      finishes.length && ["finishes", withCount("Best finishes", finishes.length)],
       (byMonth.filter(r => r.decks).length >= 2 || months.some(r => r.decks)) && ["time", "Over time"],
     ].filter(Boolean);
     if (views.length < 2) return plainCard();
@@ -577,6 +578,11 @@ async function showCardWith(card) {
   withRows($("wins-with"), $("more-wins-with"), wins.map(x => el("li", {}, nameButton(x.card),
     el("small", { textContent: `${rate(x.without)} → ${rate(x.with)} win rate · ${x.with.decks.toLocaleString()} decks with both, `
       + `${x.without.decks.toLocaleString()} without` }))));
+  finishes = finishesWith(lists, tournament.finishes, card);
+  $("finishes-with-lede").textContent = `${finishes.length.toLocaleString()} of the ${tournament.finishes.length.toLocaleString()} `
+    + `top ${TOP_FINISH} finishes by ${lead} decks in the last ${tournament.period} played ${name}. Best place first, then the `
+    + "biggest event. Records are won–lost–drawn.";
+  withRows($("finishes-with"), $("more-finishes-with"), finishes.map(f => topFinish(ctx.key, f)));
   tabs();
 }
 
@@ -2610,7 +2616,10 @@ function showResults(key, results, names, released, onPeriod) {
     // Cards: how much more (or less) often the decks playing each one win
     const cards = cardResults(results, w);
     const tile = x => resultTile(x, decks);
-    tournament = { lead, period: period(), w, byCard: new Map(cards.map(x => [x.card, { ...x, story: tile(x).story }])) };
+    // Its best finishes in the period, newest first, each with its decklist
+    const since = new Date(Date.now() - results.windows[w] * 864e5).toISOString().slice(0, 10);
+    const finishes = results.top.filter(f => f[0] >= since);
+    tournament = { lead, period: period(), w, finishes, byCard: new Map(cards.map(x => [x.card, { ...x, story: tile(x).story }])) };
     const few = !usable(w) ? `There are too few ${lead} decks in the last ${period()} to compare cards. Try a longer period.` : "";
     const more = cards.filter(x => x.lift > 0 && x.evidence >= SIGNAL).sort((a, b) => b.lift - a.lift);
     $("wins-more-lede").textContent = few || (more.length
@@ -2628,18 +2637,13 @@ function showResults(key, results, names, released, onPeriod) {
       : "No card clearly lowers the win rate of these decks.");
     showWinsLess(less.map(tile));
 
-    // Its best finishes in the period, newest first, each with its decklist
-    const since = new Date(Date.now() - results.windows[w] * 864e5).toISOString().slice(0, 10);
-    const finishes = results.top.filter(f => f[0] >= since);
     $("finishes-lede").textContent = finishes.length
       ? `${finishes.length.toLocaleString()} top ${TOP_FINISH} finishes, newest first. Records are won–lost–drawn.`
       : `No top ${TOP_FINISH} finishes in the last ${period()}.`;
     let shown = 0;
     $("finishes").replaceChildren();
     $("more-finishes").onclick = () => {
-      $("finishes").append(...finishes.slice(shown, shown + PAGE_FINISHES).map(([date, event, size, standing, won, lost, drew, link, pilot, pilotName, deck = -1]) =>
-        finishItem(standing, event, link, pilot ? [el("a", { href: pilotLink(pilot), textContent: pilotName || "Unknown pilot" })] : [],
-          [`of ${size} players`, dateName(date), `${won}–${lost}–${drew}`], key, deck, pilot)));
+      $("finishes").append(...finishes.slice(shown, shown + PAGE_FINISHES).map(f => topFinish(key, f)));
       shown += PAGE_FINISHES;
       $("more-finishes").hidden = shown >= finishes.length;
     };
@@ -2673,6 +2677,10 @@ function finishItem(standing, event, link, lead, facts, key = "", deck = -1, pil
     el("span", { className: "finish-links" }, listLink(link) ?? "", key && deck >= 0 ? compareLink(key, deck, pilot) : ""),
     el("span", { className: "deck-meta" }, ...lead.flatMap(node => [node, " · "]), facts.join(" · ")));
 }
+// A row of a commander's results/<key>.json top, as finishItem shows it
+const topFinish = (key, [date, event, size, standing, won, lost, drew, link, pilot, pilotName, deck = -1]) =>
+  finishItem(standing, event, link, pilot ? [el("a", { href: pilotLink(pilot), textContent: pilotName || "Unknown pilot" })] : [],
+    [`of ${size} players`, dateName(date), `${won}–${lost}–${drew}`], key, deck, pilot);
 
 // === Tournaments: every commander's results, and the cards that win across commanders ===
 const PAGE_ROWS = 25;

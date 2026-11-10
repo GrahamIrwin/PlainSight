@@ -239,7 +239,10 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
    whole, e.g. "42% → 48% of decks (595 decks)"), **Wins more with** (cards
    whose tournament decks with both win more than those with only this card,
    over the page's results period, clear differences only, e.g. "26% → 38% win
-   rate (412 decks play both, 300 only Jeska's Will)"), and a **synergy graph**:
+   rate (412 decks play both, 300 only Jeska's Will)"), **Best finishes**
+   (the commander's top 4 finishes over the page's results period whose decks
+   played it, best place first, then the biggest event, each with its decklist
+   and a Compare link), and a **synergy graph**:
    the card in the middle and around it the cards played with it clearly more than chance (a
    correlation of 0.2 or more between being in a deck, the strongest 12; 8 on a phone). Every line is
    such a correlation, ranked strongest to weakest and drawn by its fifth of the ranking, thick dark

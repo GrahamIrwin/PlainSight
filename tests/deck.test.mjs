@@ -4,7 +4,7 @@ import {
   nameLookup, parseDecklist, decodeShard, similarDecks, foldCopies, recommend, closestCommanders,
   findBuilds, distinctive, averageDeck, playedDifferently, buildName, buildTags, findPackages, packageGroups, comboDecks, groupCombos, comboPrimer,
   decodeTrends, cardResults, packageResults, withCards, filterCommanders, trendingCommanders, trendingCards, commandersPlaying, risingCards,
-  playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies,
+  playedMoreWith, winsMoreWith, synergyGraph, packageMap, packageGraph, playRateByMonth, resultsByMonth, winTies, finishesWith,
 } from "../site/deck.js";
 
 const NAMES = ["Sol Ring", "Atraxa, Praetors' Voice", "Delver of Secrets // Insectile Aberration", "Island",
@@ -416,6 +416,16 @@ test("a card's tournament results by month, against all the commander's decks; n
     { month: "2026-01", decks: 1, games: 6, wins: 3, allDecks: 2, allGames: 12, allWins: 4 }]);
   assert.deepEqual(resultsByMonth(lists, 42).map(r => r.decks), [0, 0, 0]);
   assert.deepEqual(resultsByMonth({ cards: lists.cards, decks: lists.decks }, 7), []);
+});
+
+test("a card's best finishes: the decks playing it, highest place, then biggest event, then newest", () => {
+  const lists = { cards: [7, 8], decks: [listDeck(0, 2, [0]), listDeck(0, 3, [0, 1]), listDeck(0, 6, [1])] };
+  const row = (date, size, standing, deck) => [date, "Event", size, standing, 4, 1, 0, "", 0, "", ...(deck === undefined ? [] : [deck])];
+  const top = [row("2026-01-02", 30, 2, 0), row("2026-01-01", 30, 1, 2), row("2026-01-03", 60, 2, 1),
+    row("2026-01-04", 60, 2, 0), row("2026-01-05", 90, 1, -1), row("2026-01-06", 90, 1)];
+  assert.deepEqual(finishesWith(lists, top, 7).map(f => f[0]), ["2026-01-04", "2026-01-03", "2026-01-02"]);
+  assert.deepEqual(finishesWith(lists, top, 8).map(f => f[0]), ["2026-01-01", "2026-01-03"]);
+  assert.deepEqual(finishesWith(lists, top, 42), []);
 });
 
 // No line runs within `least` of a node it doesn't join (lines: [[node, node]], nodes with x and y)

@@ -618,6 +618,7 @@
     .finish .place { grid-row: span 2; font: 20px/1 'Beleren Bold', Georgia, serif; color: var(--accent); }
     .finish .deck-meta { grid-column: 2 / -1; }
     .finish-links { display: flex; gap: 12px; justify-self: end; }
+    .deck-list.with-finishes { grid-template-columns: 1fr; }
     .deck-body .added { color: var(--up); }
     .deck-body .cut { color: var(--down); }
     .source-note { font-size: 14px; margin: 26px 0 0; }
@@ -1860,6 +1861,11 @@
         <p class="with-note" id="wins-with-lede"></p>
         <ul class="found-list with-list" id="wins-with"></ul>
         <button type="button" class="link-button" id="more-wins-with" hidden>Show more</button>
+      </div>
+      <div class="with-panel" hidden data-with="finishes">
+        <p class="with-note" id="finishes-with-lede"></p>
+        <ol class="deck-list finish-list with-finishes" id="finishes-with"></ol>
+        <button type="button" class="link-button" id="more-finishes-with" hidden>Show more</button>
       </div>
       <div class="with-panel" hidden data-with="time">
         <div class="chips type-filter" id="with-kinds" role="group" aria-label="Over time"></div>
