@@ -398,6 +398,9 @@ each with a card's art (hard-coded Scryfall art crops, so the page needs no data
      (`results/card-commanders/<block>.json`: for each of 16 cards, each
      commander's decks playing it, their games and wins, in each period,
      fetched when the card is opened).
+
+     ![Rhystic Study in tournament decks: in 61.8% of the last 3 months' 18,053 tournament decks, and the 293 commanders whose decks played it, by play rate: Tymna & Kraum, Tivit, Scion of the Ur-Dragon, Malcolm & Vial Smasher and Thrasios & Vial Smasher, each with 100% of its decks playing it and its win rate](docs/images/screenshot-card-tournaments.webp)
+
 5. **Trends** (`?trends`) shows rising and most popular commanders and cards,
    and new cards, over decks made in the last 7, 30 or 90 days or all time.
    Filters (color identity, where a commander must be exactly the colors

@@ -16,10 +16,11 @@ SITE = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "images")
 WIDTH = 1280
 
-# Derevi's card number in the site's index (it changes as Scryfall's list grows), and a public
-# Derevi deck from the site's own deck file, as a pasted decklist
+# Derevi's and Rhystic Study's card numbers in the site's index (they change as Scryfall's list grows),
+# and a public Derevi deck from the site's own deck file, as a pasted decklist
 with urllib.request.urlopen(f"{SITE}/index/names.json") as res:
-    DEREVI = json.load(res).index("Derevi, Empyrial Tactician")
+    names = json.load(res)
+    DEREVI, RHYSTIC = names.index("Derevi, Empyrial Tactician"), names.index("Rhystic Study")
 DECK = """async key => {
   const names = await (await fetch('index/names.json')).json();
   const shard = await (await fetch(`decks/${key}.json`)).json();
@@ -149,6 +150,13 @@ with sync_playwright() as p:
     settle(page)
     row = at(page.locator("table tbody tr").nth(5))
     save(page, "screenshot-tournaments", {"x": 0, "y": 200, "width": WIDTH, "height": row["y"] + row["height"] - 200})
+
+    # 4b. A card's page in tournament decks: the commanders whose decks played it lately, by play rate
+    page.goto(f"{SITE}/?card={RHYSTIC}&decks=tournament")
+    page.wait_for_selector("#card-commanders .card")
+    settle(page)
+    first = at(page.locator("#card-commanders .card").first)
+    save(page, "screenshot-card-tournaments", {"x": 0, "y": 200, "width": WIDTH, "height": first["y"] + first["height"] + 16 - 200})
 
     # 5. A card's details: its price history, every day since its printing
     page.goto(f"{SITE}/?q=Smothering+Tithe")
